@@ -3,6 +3,8 @@ library(readr)
 library(dplyr)
 library(lme4)
 
+source("H:/ncands-fc/ncandsfunctions.r")
+
 setwd("H:/data")
 source("H:/NCANDS-clean/ncandsread.r")
 
@@ -10,8 +12,9 @@ source("H:/NCANDS-clean/ncandsread.r")
 ### READ AND CLEAN DATA
 key<-read.csv("H:/NCANDS-clean/ncandskey2012.csv", head=TRUE)
 
-dat<-ncands.fwf(dat="H:/data/Child2012v1.dat", "H:/NCANDS-clean/ncandskey2012.csv")
+dat<-ncands.fwf(dat="H:/data/Sample2012.dat", "H:/NCANDS-clean/ncandskey2012.csv")
 dat<-ncandsclean(dat)
+dat<-as.data.frame(dat)
 state<-read.csv("H:/data/statedat.csv", head=TRUE)
 names(state)[(which(names(state)=="stname"))]<-"st"
 
@@ -31,6 +34,7 @@ state2011<-state[state$year==2011,] ### As latest rolling estimate with this dat
 # 		)
 
 # states<-left_join(states, state2011, by="st")
+
 dat$st<-dat$StaTerr
 s.dat<-left_join(dat, state2011, by="st")
 
@@ -81,7 +85,9 @@ s.dat<-left_join(dat, state2011, by="st")
 
 # m1.results<-glmer(m1, data=mergetest, family="binomial")
 
-m2<-serv.foster~chrace+chlatino+
+
+
+m2<-serv.foster~chrace*x$par.married+chlatino+
 	ideo+pctblk+povrt+
 	#+crime.pc+childnot2par+chpovrt+incarrt+afdcrec
 	(1|stname)
@@ -93,7 +99,7 @@ m3<-serv.post~chrace+chlatino+
 	#+crime.pc+childnot2par+chpovrt+incarrt+afdcrec
 	(1|stname)
 
-m3.results<-glmer(m3, data=mergetest, family="binomial")
+#m3.results<-glmer(m3, data=mergetest, family="binomial")
 
 
 

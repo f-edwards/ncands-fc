@@ -1,22 +1,23 @@
 ncandsclean<-function(dat){
+	
 	#### TRANSFORM MISSINGS WITHIN DAT
 	#### CREATE NEW DF X FOR RETURN, DROP UNNEEDED VARS
 	#### CONVERT ALL NA TO 9 - THEN CONVERT BACK AT END
 	### SO MUCH SYSTEMATIC MISSING DATA...... ChLvng missing in 
 	### AL, IA, HI, IL, LA, MA, MI, MO, MS, NM, NV, SD, VA, WY
-	na.conv<-c("PostServ", "FamSup", "FamPres",
-		"FosterCr", "JuvPet", "CoChRep",
-		"Adopt", "CaseMang", "Counsel", "Daycare",
-		"Educatn", "Employ", "FamPlan", "Health",
-		"Homebas", "Housing", "TransLiv", "InfoRef",
-		"Legal", "MentHlth", "PregPar", "Respite",
-		"SSDisabl", "SSDelinq", "SubAbuse", 
-		"Transprt", "OtherSv")
+	# na.conv<-c("PostServ", "FamSup", "FamPres",
+	# 	"FosterCr", "JuvPet", "CoChRep",
+	# 	"Adopt", "CaseMang", "Counsel", "Daycare",
+	# 	"Educatn", "Employ", "FamPlan", "Health",
+	# 	"Homebas", "Housing", "TransLiv", "InfoRef",
+	# 	"Legal", "MentHlth", "PregPar", "Respite",
+	# 	"SSDisabl", "SSDelinq", "SubAbuse", 
+	# 	"Transprt", "OtherSv")
 
-	for(j in(1:length(na.conv))){
-		z<-which(is.na(dat[,na.conv[j]]))
-		dat[z, na.conv[j]]<-9
-		}
+	# for(j in(1:length(na.conv))){
+	# 	z<-which(is.na(dat[,na.conv[j]]))
+	# 	dat[z, na.conv[j]]<-9
+	# 	}
 
 
 	x<-list()
@@ -204,7 +205,7 @@ ncandsclean<-function(dat){
 	x$serv.famplan<-dat$FamSup==1
 	x$serv.health<-dat$FamSup==1
 	x$serv.homebas<-dat$FamSup==1
-	x$serv.housing-dat$FamSup==1
+	x$serv.housing<-dat$FamSup==1
 	x$serv.transliv<-dat$FamSup==1
 	x$serv.inforef<-dat$FamSup==1
 	x$serv.legal<-dat$FamSup==1
@@ -217,46 +218,15 @@ ncandsclean<-function(dat){
 	x$serv.transprt<-dat$FamSup==1
 	x$serv.othersv<-dat$FamSup==1
 
+	# dat[dat$ChLvng==99,]<-NA
+	x$par.married<-ifelse(dat$ChLvng==1, TRUE,
+		ifelse(dat$ChLvng==2, TRUE, FALSE))
 
-
-
-
-	dat$Adopt[dat$Adopt==9]<-NA
-	dat$Adopt<-dat$Adopt==1
-
-	dat$CaseMang[dat$CaseMang==9]<-NA
-	dat$CaseMang<-dat$CaseMang==1
-
-	dat$CdAlc[dat$CdAlc==9]<-NA
-	dat$CdAlc<-dat$CdAlc==1
-
-	dat$CdBehav[dat$CdBehav==9]<-NA
-	dat$CdBehav<-dat$CdBehav==1
-
-	dat$CdDrug[dat$CdDrug==9]<-NA
-	dat$CdDrug<-dat$CdDrug==1
-
-	dat$CdEmotnl[dat$CdEmotnl==9]<-NA
-	dat$CdEmotnl<-dat$CdEmotnl==1
-
-	dat$CdLearn[dat$CdLearn==9]<-NA
-	dat$CdLearn<-dat$CdLearn==1
-
-	dat$CdMedicl[dat$CdMedicl==9]<-NA
-	dat$CdMedicl<-dat$CdMedicl==1
-
-	dat$CdPhys[dat$CdPhys==9]<-NA
-	dat$CdPhys<-dat$CdPhys==1
-
-	dat$CdRtrd[dat$CdRtrd==9]<-NA
-	dat$CdRtrd<-dat$CdRtrd==1
-
-	dat$CdVisual[dat$CdVisual==9]<-NA
-	dat$CdVisual<-dat$CdVisual==1
+		
 
 
 
 	### ChildRace may vary year to year
-	return(x)
+	return(as.data.frame(x))
 }
 

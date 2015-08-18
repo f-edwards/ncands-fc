@@ -222,7 +222,7 @@ ncandsclean<-function(dat){
 	x$par.married<-ifelse(dat$ChLvng==1, TRUE,
 		ifelse(dat$ChLvng==2, TRUE, FALSE))
 
-			### ChildRace may vary year to year
+	### ChildRace may vary year to year
 	return(as.data.frame(x))
 }
 

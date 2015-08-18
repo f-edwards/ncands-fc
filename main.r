@@ -86,12 +86,11 @@ s.dat<-left_join(dat, state2011, by="st")
 
 
 
-m2<-serv.foster~chrace*par.married+chlatino+
-	ideo+pctblk+povrt+
-	#+crime.pc+childnot2par+chpovrt+incarrt+afdcrec
-	(1|st)
+m2<-serv.foster~(chrace=="black")*par.married+
+	ideo+pctblk+povrt
+	
 
-m2.results<-glmer(m2, data=s.dat, family="binomial")
+m2.results<-glm(m2, data=s.dat, family="binomial")
 
 m3<-serv.post~chrace+chlatino+
 	ideo+pctblk+

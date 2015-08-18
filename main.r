@@ -5,7 +5,7 @@ library(lme4)
 
 source("H:/ncands-fc/ncandsfunctions.r")
 
-setwd("H:/data")
+setwd("H:/")
 source("H:/NCANDS-clean/ncandsread.r")
 
 ### PULLED COL WIDTH, COL NAMES FROM VariableLayout.xlsx, transposed
@@ -35,7 +35,6 @@ state2011<-state[state$year==2011,] ### As latest rolling estimate with this dat
 
 # states<-left_join(states, state2011, by="st")
 
-dat$st<-dat$StaTerr
 s.dat<-left_join(dat, state2011, by="st")
 
 
@@ -87,7 +86,7 @@ s.dat<-left_join(dat, state2011, by="st")
 
 
 
-m2<-serv.foster~chrace*x$par.married+chlatino+
+m2<-serv.foster~chrace*par.married+chlatino+
 	ideo+pctblk+povrt+
 	#+crime.pc+childnot2par+chpovrt+incarrt+afdcrec
 	(1|stname)

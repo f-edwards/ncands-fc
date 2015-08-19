@@ -2,6 +2,7 @@ rm(list=ls())
 library(readr)
 library(dplyr)
 library(lme4)
+library(texreg)
 
 source("H:/ncands-fc/ncandsfunctions.r")
 
@@ -26,7 +27,7 @@ state$pctblk<-state$blkpop/state$pop
 state$chpovrt<-state$childpov/state$child
 state$unemprt<-state$unemp/(state$unemp+state$emp)
 state$childnot2par<-1-(state$kids2par/state$child)
-state$gsppercap<-state$GSP*1000000/pop
+state$gsppercap<-state$GSP*1000000/state$pop
 
 
 
@@ -111,13 +112,14 @@ s.dat<-left_join(dat, state2011, by="st")
 
 # m3.results<-glm(m3, data=s.dat, family="binomial")
 
-rpt.results<-NULL
+rpt.results<-list()
 rpt<-levels(s.dat$rptsrc)
-#for(i in (1:length(levels(s.dat$rptsrc)))){
+for(i in (1:length(levels(s.dat$rptsrc)))){
 	i<-1
 	m<-(rptsrc==rpt[[i]])~alleg.neg+alleg.phys+
 	alleg.medneg+alleg.sex+alleg.psych+
 	(chrace=="black")+
+	(chrace=="amind")+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
@@ -125,18 +127,6 @@ rpt<-levels(s.dat$rptsrc)
 	scale(edu.pc)+scale(hosp.pc)+
 	(1|st)
 	rpt.results[[i]]<-glmer(m, data=s.dat, family="binomial")
-#}
+}
 
-#m3.results<-glmer(m3, data=mergetest, family="binomial")
-
-
-
-
-### CLEANING AND MISSING EVAL
-
-# stabs<-list(NULL)
-# m.index<-NULL
-# for(i in(1:ncol(dat))){
-# 	stabs[[i]]<-table(dat$StaTerr, is.na(dat[,i]))
-# }
-# names(stabs)<-names(dat)
+plotreg(rpt.results[[1]], file="rpt-police.pdf")

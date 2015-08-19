@@ -13,9 +13,11 @@ source("H:/NCANDS-clean/ncandsread.r")
 ### READ AND CLEAN DATA
 key<-read.csv("H:/NCANDS-clean/ncandskey2012.csv", head=TRUE)
 
-dat<-ncands.fwf(dat="H:/data/Sample2012.dat", "H:/NCANDS-clean/ncandskey2012.csv")
+dat<-ncands.fwf(dat="H:/data/Child2012v1.dat", "H:/NCANDS-clean/ncandskey2012.csv")
 dat<-ncandsclean(dat)
+dat<-dat[,c(3, 4, 6, 11, 21:25)]
 dat<-as.data.frame(dat)
+dat$chrace<-factor(dat$chrace, levels(dat$chrace)[c(4,1,2,3)])
 state<-read.csv("H:/ncands-fc/statedat.csv", head=TRUE)
 names(state)[(which(names(state)=="stname"))]<-"st"
 ### STATE LEVEL MEASURES
@@ -32,25 +34,29 @@ state$gsppercap<-state$GSP*1000000/state$pop
 
 
 
-state2011<-state[state$year==2011,] ### As latest rolling estimate with this data, will improve later to 5yr ACS for period
+state2011<-state[state$year==2010,] ### As latest rolling estimate with this data, will improve later to 5yr ACS for period
+keeps<-c("st", "police.pc", "welfare.pc", "edu.pc", "hosp.pc",
+	"pctblk", "chpovrt", "unemprt", "childnot2par", "gsppercap", "food.insec",
+	"inst6010_nom")
+state2011<-state2011[,which(names(state2011)%in%keeps)]
 
 #### LOOK AT FORMAL REPORTS COUNT BY STATE - have problem of missing race data
 ### using dplyr
-state.count<- dat %>%
-	group_by(st)%>%
-	summarise(report_child=n(),
-		reports=n_distinct(RptID),
-		report.race=sum(!(is.na(chrace))),
-		child.blk=sum('%in%'(chrace, "black")),
-		pct.blk.rpt=child.blk/report.race,
-		rpt.police=sum('%in%'(rptsrc, "cj")),
-		rpt.edu=sum('%in%'(rptsrc, "education")),
-		rpt.med=sum('%in%'(rptsrc, "medical")),
-		rpt.welf=sum('%in%'(rptsrc, "socserv")),
-		fc=sum('%in%'(serv.foster, TRUE))
-		)
+# state.count<- dat %>%
+# 	group_by(st)%>%
+# 	summarise(report_child=n(),
+# 		reports=n_distinct(RptID),
+# 		report.race=sum(!(is.na(chrace))),
+# 		child.blk=sum('%in%'(chrace, "black")),
+# 		pct.blk.rpt=child.blk/report.race,
+# 		rpt.police=sum('%in%'(rptsrc, "cj")),
+# 		rpt.edu=sum('%in%'(rptsrc, "education")),
+# 		rpt.med=sum('%in%'(rptsrc, "medical")),
+# 		rpt.welf=sum('%in%'(rptsrc, "socserv")),
+# 		fc=sum('%in%'(serv.foster, TRUE))
+# 		)
 
-state.count<-left_join(state.count, state2011, by="st")
+# state.count<-left_join(state.count, state2011, by="st")
 
 # states<-left_join(states, state2011, by="st")
 
@@ -121,53 +127,49 @@ s.dat<-left_join(dat, state2011, by="st")
 rpt.results<-list()
 m<-list()
 	###POLICE
-	m[[1]]<-(rptsrc=="cj")~#alleg.neg+alleg.phys+
-#	alleg.medneg+alleg.sex+alleg.psych+
+	m[[1]]<-(rptsrc=="cj")~alleg.neg+alleg.phys+
+	alleg.medneg+alleg.sex+alleg.psych+
 	chrace+
-	#(chrace=="amind")+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
-	scale(police.pc)+
+	scale(police.pc)+scale(edu.pc)+scale(hosp.pc)+scale(welfare.pc)+
 	(1|st)
 	###EDUCATION
-	m[[2]]<-(rptsrc=="education")~#alleg.neg+alleg.phys+
-#	alleg.medneg+alleg.sex+alleg.psych+
-	(chrace=="black")+
-	#(chrace=="amind")+
+	m[[2]]<-(rptsrc=="education")~alleg.neg+alleg.phys+
+	alleg.medneg+alleg.sex+alleg.psych+
+	chrace+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
-	scale(edu.pc)+
+	scale(police.pc)+scale(edu.pc)+scale(hosp.pc)+scale(welfare.pc)+
 	(1|st)
 	###INFORMAL 
-	m[[3]]<-(rptsrc=="informal")~#alleg.neg+alleg.phys+
-#	alleg.medneg+alleg.sex+alleg.psych+
-	(chrace=="black")+
-	#(chrace=="amind")+
+	m[[3]]<-(rptsrc=="informal")~alleg.neg+alleg.phys+
+	alleg.medneg+alleg.sex+alleg.psych+
+	chrace+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
+	scale(police.pc)+scale(edu.pc)+scale(hosp.pc)+scale(welfare.pc)+
 	(1|st)
 	###MEDICAL
-	m[[4]]<-(rptsrc=="medical")~#alleg.neg+alleg.phys+
-#	alleg.medneg+alleg.sex+alleg.psych+
-	(chrace=="black")+
-	#(chrace=="amind")+
+	m[[4]]<-(rptsrc=="medical")~alleg.neg+alleg.phys+
+	alleg.medneg+alleg.sex+alleg.psych+
+	chrace+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
-	scale(hosp.pc)+
+	scale(police.pc)+scale(edu.pc)+scale(hosp.pc)+scale(welfare.pc)+
 	(1|st)
 	###WELFARE STAFF
-	m[[5]]<-(rptsrc=="socserv")~#alleg.neg+alleg.phys+
-#	alleg.medneg+alleg.sex+alleg.psych+
-	(chrace=="black")+
-	#(chrace=="amind")+
+	m[[5]]<-(rptsrc=="socserv")~alleg.neg+alleg.phys+
+	alleg.medneg+alleg.sex+alleg.psych+
+	chrace+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
-	scale(welfare.pc)+
+	scale(police.pc)+scale(edu.pc)+scale(hosp.pc)+scale(welfare.pc)+
 	(1|st)
 
 for(i in (1:5)){

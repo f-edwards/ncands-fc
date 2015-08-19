@@ -20,8 +20,15 @@ names(state)[(which(names(state)=="stname"))]<-"st"
 ### STATE LEVEL MEASURES
 state$police.pc<-state$police.ft.emp/state$pop
 state$welfare.pc<-state$welfare.ft.emp/state$pop
+state$edu.pc<-state$edu.ft.emp/state$child
+state$hosp.pc<-state$hosp.ft.emp/state$pop
 state$pctblk<-state$blkpop/state$pop
 state$chpovrt<-state$childpov/state$child
+state$unemprt<-state$unemp/(state$unemp+state$emp)
+state$childnot2par<-1-(state$kids2par/state$child)
+state$gsppercap<-state$GSP*1000000/pop
+
+
 
 
 state2011<-state[state$year==2011,] ### As latest rolling estimate with this data, will improve later to 5yr ACS for period
@@ -90,30 +97,35 @@ s.dat<-left_join(dat, state2011, by="st")
 # m1.results<-glmer(m1, data=mergetest, family="binomial")
 
 
-m2<-victim~(chrace=="black")*(par.married==FALSE)+
-	+alleg.neg+alleg.phys+alleg.medneg+alleg.sex+alleg.psych+
-	ideo+pctblk+povrt
+# m2<-victim~(chrace=="black")*(par.married==FALSE)+
+# 	+alleg.neg+alleg.phys+alleg.medneg+alleg.sex+alleg.psych+
+# 	ideo+pctblk+povrt
 	
 
-m2.results<-glm(m2, data=s.dat, family="binomial")
+# m2.results<-glm(m2, data=s.dat, family="binomial")
 
-m3<-(chrace=="black")~
-	+alleg.neg+alleg.phys+alleg.medneg+alleg.sex+alleg.psych+
-	rptsrc+
-	ideo+pctblk+povrt
+# m3<-(chrace=="black")~
+# 	+alleg.neg+alleg.phys+alleg.medneg+alleg.sex+alleg.psych+
+# 	rptsrc+
+# 	ideo+pctblk+povrt
 
-m3.results<-glm(m3, data=s.dat, family="binomial")
+# m3.results<-glm(m3, data=s.dat, family="binomial")
 
 rpt.results<-NULL
 rpt<-levels(s.dat$rptsrc)
-for(i in (1:length(levels(s.dat$rptsrc)))){
+#for(i in (1:length(levels(s.dat$rptsrc)))){
+	i<-1
 	m<-(rptsrc==rpt[[i]])~alleg.neg+alleg.phys+
 	alleg.medneg+alleg.sex+alleg.psych+
 	(chrace=="black")+
-	scale(inst6010_nom)+scale(pctblk)+#povrt+
-	scale(police.pc)+scale(welfare.pc)+(1|st)
+	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
+	scale(childnot2par)+scale(unemprt)+
+	scale(food.insec)+scale(gsppercap)+
+	scale(police.pc)+scale(welfare.pc)+
+	scale(edu.pc)+scale(hosp.pc)+
+	(1|st)
 	rpt.results[[i]]<-glmer(m, data=s.dat, family="binomial")
-}
+#}
 
 #m3.results<-glmer(m3, data=mergetest, family="binomial")
 

@@ -17,9 +17,14 @@ dat<-ncandsclean(dat)
 dat<-as.data.frame(dat)
 state<-read.csv("H:/ncands-fc/statedat.csv", head=TRUE)
 names(state)[(which(names(state)=="stname"))]<-"st"
+### STATE LEVEL MEASURES
+state$police.pc<-state$police.ft.emp/state$pop
+state$welfare.pc<-state$welfare.ft.emp/state$pop
+state$pctblk<-state$blkpop/state$pop
+state$chpovrt<-state$childpov/state$child
+
 
 state2011<-state[state$year==2011,] ### As latest rolling estimate with this data, will improve later to 5yr ACS for period
-
 
 # #### LOOK AT FORMAL REPORTS COUNT BY STATE - have problem of missing race data
 # ### using dplyr
@@ -105,8 +110,9 @@ for(i in (1:length(levels(s.dat$rptsrc)))){
 	m<-(rptsrc==rpt[[i]])~alleg.neg+alleg.phys+
 	alleg.medneg+alleg.sex+alleg.psych+
 	(chrace=="black")+
-	ideo+pctblk+povrt
-	rpt.results[[i]]<-glm(m, data=s.dat, family="binomial")
+	scale(inst6010_nom)+scale(pctblk)+#povrt+
+	scale(police.pc)+scale(welfare.pc)+(1|st)
+	rpt.results[[i]]<-glmer(m, data=s.dat, family="binomial")
 }
 
 #m3.results<-glmer(m3, data=mergetest, family="binomial")

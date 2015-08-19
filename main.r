@@ -15,7 +15,7 @@ key<-read.csv("H:/NCANDS-clean/ncandskey2012.csv", head=TRUE)
 dat<-ncands.fwf(dat="H:/data/Sample2012.dat", "H:/NCANDS-clean/ncandskey2012.csv")
 dat<-ncandsclean(dat)
 dat<-as.data.frame(dat)
-state<-read.csv("H:/data/statedat.csv", head=TRUE)
+state<-read.csv("H:/ncands-fc/statedat.csv", head=TRUE)
 names(state)[(which(names(state)=="stname"))]<-"st"
 
 state2011<-state[state$year==2011,] ### As latest rolling estimate with this data, will improve later to 5yr ACS for period
@@ -85,17 +85,29 @@ s.dat<-left_join(dat, state2011, by="st")
 # m1.results<-glmer(m1, data=mergetest, family="binomial")
 
 
-
-m2<-serv.foster~(chrace=="black")*par.married+
+m2<-victim~(chrace=="black")*(par.married==FALSE)+
+	+alleg.neg+alleg.phys+alleg.medneg+alleg.sex+alleg.psych+
 	ideo+pctblk+povrt
 	
 
 m2.results<-glm(m2, data=s.dat, family="binomial")
 
-m3<-serv.post~chrace+chlatino+
-	ideo+pctblk+
-	#+crime.pc+childnot2par+chpovrt+incarrt+afdcrec
-	(1|st)
+m3<-(chrace=="black")~
+	+alleg.neg+alleg.phys+alleg.medneg+alleg.sex+alleg.psych+
+	rptsrc+
+	ideo+pctblk+povrt
+
+m3.results<-glm(m3, data=s.dat, family="binomial")
+
+rpt.results<-NULL
+rpt<-levels(s.dat$rptsrc)
+for(i in (1:length(levels(s.dat$rptsrc)))){
+	m<-(rptsrc==rpt[[i]])~alleg.neg+alleg.phys+
+	alleg.medneg+alleg.sex+alleg.psych+
+	(chrace=="black")+
+	ideo+pctblk+povrt
+	rpt.results[[i]]<-glm(m, data=s.dat, family="binomial")
+}
 
 #m3.results<-glmer(m3, data=mergetest, family="binomial")
 

@@ -71,9 +71,9 @@ ncandsclean<-function(dat){
 	dat$ChRacAI[dat$ChRacAI==9]<-NA
 	dat$ChRacWh[dat$ChRacWh==9]<-NA
 
-	x$chrace<-ifelse(dat$ChRacBl==1, "black", 
+	x$chrace<-ifelse(dat$ChRacWh==1, "white", 
 	ifelse(dat$ChRacAI==1, "amind",
-		ifelse(dat$ChRacWh==1, "white", "other")))
+		ifelse(dat$ChRacBl==1, "black", "other")))
 
 	dat$CEthn[dat$CEthn==9]<-NA
 	x$chlatino<-dat$CEthn==1

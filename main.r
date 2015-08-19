@@ -34,17 +34,23 @@ state$gsppercap<-state$GSP*1000000/state$pop
 
 state2011<-state[state$year==2011,] ### As latest rolling estimate with this data, will improve later to 5yr ACS for period
 
-# #### LOOK AT FORMAL REPORTS COUNT BY STATE - have problem of missing race data
-# ### using dplyr
-# states<- d %>%
-# 	group_by(st)%>%
-# 	summarise(report_child=n(),
-# 		reports=n_distinct(RptID),
-# 		report.race=sum(!(is.na(chrace))),
-# 		child.blk=sum('%in%'(chrace, "black")),
-# 		pct.blk.rpt=child.blk/report.race,
-# 		fc=sum('%in%'(serv.foster, TRUE))
-# 		)
+#### LOOK AT FORMAL REPORTS COUNT BY STATE - have problem of missing race data
+### using dplyr
+state.count<- dat %>%
+	group_by(st)%>%
+	summarise(report_child=n(),
+		reports=n_distinct(RptID),
+		report.race=sum(!(is.na(chrace))),
+		child.blk=sum('%in%'(chrace, "black")),
+		pct.blk.rpt=child.blk/report.race,
+		rpt.police=sum('%in%'(rptsrc, "cj")),
+		rpt.edu=sum('%in%'(rptsrc, "education")),
+		rpt.med=sum('%in%'(rptsrc, "medical")),
+		rpt.welf=sum('%in%'(rptsrc, "socserv")),
+		fc=sum('%in%'(serv.foster, TRUE))
+		)
+
+state.count<-left_join(state.count, state2011, by="st")
 
 # states<-left_join(states, state2011, by="st")
 
@@ -113,20 +119,80 @@ s.dat<-left_join(dat, state2011, by="st")
 # m3.results<-glm(m3, data=s.dat, family="binomial")
 
 rpt.results<-list()
-rpt<-levels(s.dat$rptsrc)
-for(i in (1:length(levels(s.dat$rptsrc)))){
-	i<-1
-	m<-(rptsrc==rpt[[i]])~alleg.neg+alleg.phys+
-	alleg.medneg+alleg.sex+alleg.psych+
-	(chrace=="black")+
-	(chrace=="amind")+
+m<-list()
+	###POLICE
+	m[[1]]<-(rptsrc=="cj")~#alleg.neg+alleg.phys+
+#	alleg.medneg+alleg.sex+alleg.psych+
+	chrace+
+	#(chrace=="amind")+
 	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
 	scale(childnot2par)+scale(unemprt)+
 	scale(food.insec)+scale(gsppercap)+
-	scale(police.pc)+scale(welfare.pc)+
-	scale(edu.pc)+scale(hosp.pc)+
+	scale(police.pc)+
 	(1|st)
-	rpt.results[[i]]<-glmer(m, data=s.dat, family="binomial")
+	###EDUCATION
+	m[[2]]<-(rptsrc=="education")~#alleg.neg+alleg.phys+
+#	alleg.medneg+alleg.sex+alleg.psych+
+	(chrace=="black")+
+	#(chrace=="amind")+
+	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
+	scale(childnot2par)+scale(unemprt)+
+	scale(food.insec)+scale(gsppercap)+
+	scale(edu.pc)+
+	(1|st)
+	###INFORMAL 
+	m[[3]]<-(rptsrc=="informal")~#alleg.neg+alleg.phys+
+#	alleg.medneg+alleg.sex+alleg.psych+
+	(chrace=="black")+
+	#(chrace=="amind")+
+	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
+	scale(childnot2par)+scale(unemprt)+
+	scale(food.insec)+scale(gsppercap)+
+	(1|st)
+	###MEDICAL
+	m[[4]]<-(rptsrc=="medical")~#alleg.neg+alleg.phys+
+#	alleg.medneg+alleg.sex+alleg.psych+
+	(chrace=="black")+
+	#(chrace=="amind")+
+	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
+	scale(childnot2par)+scale(unemprt)+
+	scale(food.insec)+scale(gsppercap)+
+	scale(hosp.pc)+
+	(1|st)
+	###WELFARE STAFF
+	m[[5]]<-(rptsrc=="socserv")~#alleg.neg+alleg.phys+
+#	alleg.medneg+alleg.sex+alleg.psych+
+	(chrace=="black")+
+	#(chrace=="amind")+
+	scale(inst6010_nom)+scale(pctblk)+scale(chpovrt)+
+	scale(childnot2par)+scale(unemprt)+
+	scale(food.insec)+scale(gsppercap)+
+	scale(welfare.pc)+
+	(1|st)
+
+for(i in (1:5)){
+	rpt.results[[i]]<-glmer(m[[i]], data=s.dat, family="binomial")
 }
 
-plotreg(rpt.results[[1]], file="rpt-police.pdf")
+plotreg(l=list(rpt.results[[1]]), file="rpt-police.pdf",
+	custom.model.names=c(""),
+	custom.coef.names=c("Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race - Black",
+		"Child race - Native American",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Welfare workers per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita"),
+	omit.coef="(alleg)")

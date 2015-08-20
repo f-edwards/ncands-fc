@@ -172,9 +172,13 @@ m<-list()
 	scale(police.pc)+scale(edu.pc)+scale(hosp.pc)+scale(welfare.pc)+
 	(1|st)
 
-for(i in (1:5)){
-	rpt.results[[i]]<-glmer(m[[i]], data=s.dat, family="binomial")
-}
+	rpt.results.1<-glmer(m[[1]], data=s.dat, family="binomial")
+	rpt.results.2<-glmer(m[[2]], data=s.dat, family="binomial")
+	rpt.results.3<-glmer(m[[3]], data=s.dat, family="binomial")
+	rpt.results.4<-glmer(m[[4]], data=s.dat, family="binomial")
+	rpt.results.5<-glmer(m[[5]], data=s.dat, family="binomial")
+
+
 
 plotreg(l=list(rpt.results[[1]]), file="rpt-police.pdf",
 	custom.model.names=c(""),

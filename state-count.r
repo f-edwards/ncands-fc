@@ -24,7 +24,7 @@ state.out<-list()
 ### DEAL WITH VARYING FORMATS - WHEN IS DAT, WHEN NEED TO CONVERT FROM STATA
 for(i in (1:length(files))){
 dat<-ncands.fwf(dat=files[i], "H:/NCANDS-clean/ncandskey2012.csv")
-
+dat<-ncandsclean(dat)
 state.count<- dat %>%
 	group_by(st)%>%
 	summarise(report_child=n(),
@@ -32,11 +32,11 @@ state.count<- dat %>%
 		rpt.police=sum('%in%'(rptsrc, "cj")),
 		rpt.edu=sum('%in%'(rptsrc, "education")),
 		rpt.med=sum('%in%'(rptsrc, "medical")),
-		rpt.welf=sum('%in%'(rptsrc, "socserv")),
+		rpt.welf=sum('%in%'(rptsrc, "socserv"))
 		)
 
-state.count$year<-year
-state.out[[j]]<-state.count
+state.count$year<-year[i]
+state.out[[i]]<-state.count
 rm(dat)
 
 }

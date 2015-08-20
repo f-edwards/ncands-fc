@@ -3,6 +3,7 @@ library(readr)
 library(dplyr)
 library(lme4)
 library(texreg)
+set.seed(1)
 
 source("H:/ncands-fc/ncandsfunctions.r")
 
@@ -12,8 +13,9 @@ source("H:/NCANDS-clean/ncandsread.r")
 ### PULLED COL WIDTH, COL NAMES FROM VariableLayout.xlsx, transposed
 ### READ AND CLEAN DATA
 key<-read.csv("H:/NCANDS-clean/ncandskey2012.csv", head=TRUE)
-
 dat<-ncands.fwf(dat="H:/data/Child2012v1.dat", "H:/NCANDS-clean/ncandskey2012.csv")
+samp.size<-trunc(nrow(dat)/10)
+dat<-dat[sample(nrow(dat), samp.size),]
 dat<-ncandsclean(dat)
 dat<-dat[,c(3, 4, 6, 11, 21:25)]
 dat<-as.data.frame(dat)
@@ -180,7 +182,7 @@ m<-list()
 
 
 
-plotreg(l=list(rpt.results[[1]]), file="rpt-police.pdf",
+plotreg(l=list(rpt.results.1), #file="rpt-police.pdf",
 	custom.model.names=c(""),
 	custom.coef.names=c("Intercept",
 		"alleg.neg",
@@ -188,8 +190,8 @@ plotreg(l=list(rpt.results[[1]]), file="rpt-police.pdf",
 		"alleg.medneg",
 		"alleg.sex",
 		"alleg.psych",
-		"Child race - Black",
-		"Child race - Native American",
+		"Child race Native American",
+		"Child race Black",
 		"Political Ideology",
 		"Percent Black population",
 		"Child poverty rate",
@@ -198,7 +200,7 @@ plotreg(l=list(rpt.results[[1]]), file="rpt-police.pdf",
 		"Food insecurity rate",
 		"GSP per capita",
 		"Police per capita",
-		"Welfare workers per capita",
 		"Education staff per capita",
-		"Public hospital staff per capita"),
-	omit.coef="(alleg)")
+		"Public hospital staff per capita",
+		"Welfare workers per capita"),
+	omit.coef="(alleg)|(Intercept)")

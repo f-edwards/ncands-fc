@@ -42,21 +42,8 @@ keeps<-c("st", "police.pc", "welfare.pc", "edu.pc", "hosp.pc",
 	"inst6010_nom")
 state2011<-state2011[,which(names(state2011)%in%keeps)]
 
-#### LOOK AT FORMAL REPORTS COUNT BY STATE - have problem of missing race data
-### using dplyr
-# state.count<- dat %>%
-# 	group_by(st)%>%
-# 	summarise(report_child=n(),
-# 		reports=n_distinct(RptID),
-# 		report.race=sum(!(is.na(chrace))),
-# 		child.blk=sum('%in%'(chrace, "black")),
-# 		pct.blk.rpt=child.blk/report.race,
-# 		rpt.police=sum('%in%'(rptsrc, "cj")),
-# 		rpt.edu=sum('%in%'(rptsrc, "education")),
-# 		rpt.med=sum('%in%'(rptsrc, "medical")),
-# 		rpt.welf=sum('%in%'(rptsrc, "socserv")),
-# 		fc=sum('%in%'(serv.foster, TRUE))
-# 		)
+### LOOK AT FORMAL REPORTS COUNT BY STATE - have problem of missing race data
+## using dplyr
 
 # state.count<-left_join(state.count, state2011, by="st")
 
@@ -180,11 +167,14 @@ m<-list()
 	rpt.results.4<-glmer(m[[4]], data=s.dat, family="binomial")
 	rpt.results.5<-glmer(m[[5]], data=s.dat, family="binomial")
 
+### Descriptives
 
 
-plotreg(l=list(rpt.results.1), #file="rpt-police.pdf",
+
+plotreg(l=list(rpt.results.1), file="rpt-police.pdf",
 	custom.model.names=c(""),
-	custom.coef.names=c("Intercept",
+	custom.coef.names=c(	
+		"Intercept",
 		"alleg.neg",
 		"alleg.phys",
 		"alleg.medneg",
@@ -192,6 +182,7 @@ plotreg(l=list(rpt.results.1), #file="rpt-police.pdf",
 		"alleg.psych",
 		"Child race Native American",
 		"Child race Black",
+		"Child race other",
 		"Political Ideology",
 		"Percent Black population",
 		"Child poverty rate",
@@ -203,4 +194,160 @@ plotreg(l=list(rpt.results.1), #file="rpt-police.pdf",
 		"Education staff per capita",
 		"Public hospital staff per capita",
 		"Welfare workers per capita"),
-	omit.coef="(alleg)|(Intercept)")
+	omit.coef="(alleg)|(Intercept)|(other)")
+
+
+plotreg(l=list(rpt.results.2), file="rpt-edu.pdf",
+	custom.model.names=c(""),
+	custom.coef.names=c(	
+		"Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race Native American",
+		"Child race Black",
+		"Child race other",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita",
+		"Welfare workers per capita"),
+	omit.coef="(alleg)|(Intercept)|(other)")
+
+
+plotreg(l=list(rpt.results.3), file="rpt-informal.pdf",
+	custom.model.names=c(""),
+	custom.coef.names=c(	
+		"Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race Native American",
+		"Child race Black",
+		"Child race other",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita",
+		"Welfare workers per capita"),
+	omit.coef="(alleg)|(Intercept)|(other)")
+
+
+plotreg(l=list(rpt.results.4), file="rpt-hospital.pdf",
+	custom.model.names=c(""),
+	custom.coef.names=c(	
+		"Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race Native American",
+		"Child race Black",
+		"Child race other",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita",
+		"Welfare workers per capita"),
+	omit.coef="(alleg)|(Intercept)|(other)")
+
+
+plotreg(l=list(rpt.results.5), file="rpt-welfare.pdf",
+	custom.model.names=c(""),
+	custom.coef.names=c(	
+		"Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race Native American",
+		"Child race Black",
+		"Child race other",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita",
+		"Welfare workers per capita"),
+	omit.coef="(alleg)|(Intercept)|(other)")
+
+texreg(l=list(rpt.results.1, rpt.results.2, rpt.results.3,
+	rpt.results.4, rpt.results.5), file="rpt.tex",
+	custom.model.names=c("Police", "Education", "Informal", 
+		"Hospital", "Social Welfare"),
+	custom.coef.names=c(	
+		"Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race Native American",
+		"Child race Black",
+		"Child race other",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita",
+		"Welfare workers per capita"))
+
+texreg(l=list(rpt.results.1, rpt.results.2, rpt.results.3,
+	rpt.results.4, rpt.results.5), file="rpt-simple.tex",
+	custom.model.names=c("Police", "Education", "Informal", 
+		"Hospital", "Social Welfare"),
+	custom.coef.names=c(	
+		"Intercept",
+		"alleg.neg",
+		"alleg.phys",
+		"alleg.medneg",
+		"alleg.sex",
+		"alleg.psych",
+		"Child race Native American",
+		"Child race Black",
+		"Child race other",
+		"Political Ideology",
+		"Percent Black population",
+		"Child poverty rate",
+		"Single parent family rate",
+		"Unemployment rate",
+		"Food insecurity rate",
+		"GSP per capita",
+		"Police per capita",
+		"Education staff per capita",
+		"Public hospital staff per capita",
+		"Welfare workers per capita"))

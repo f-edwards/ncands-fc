@@ -351,3 +351,4 @@ texreg(l=list(rpt.results.1, rpt.results.2, rpt.results.3,
 		"Education staff per capita",
 		"Public hospital staff per capita",
 		"Welfare workers per capita"))
+

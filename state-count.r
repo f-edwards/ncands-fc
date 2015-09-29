@@ -74,3 +74,5 @@ rm(dat)
 
 st.out<-do.call("rbind", state.out.unique.rpt)
 write.csv(st.out, "rpt-count-unique.csv")
+
+### screening out rates may vary - might want to control for proportion screened out at state level

@@ -35,12 +35,10 @@ cnty.unique.rpt<- dat %>%
 		)
 
 cnty.unique.rpt$year<-year[i]
-cnty.out[[i]]<-state.unique.rpt
+cnty.out[[i]]<-cnty.unique.rpt
 rm(dat)
 
 }
 
 county.out<-do.call("rbind", cnty.out)
 write.csv(county.out, "rpt-count-county-unique.csv")
-
-### screening out rates may vary - might want to control for proportion screened out at state level

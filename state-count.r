@@ -26,6 +26,10 @@ state.out.unique.rpt<-list()
 # }
 ### DEAL WITH VARYING FORMATS - WHEN IS DAT, WHEN NEED TO CONVERT FROM STATA
 
+## PA DOESN'T DUPLICATE RPTIDS FOR DIFFERENT KIDS ON SAME REPORT, COUNT ISN'T BY CALL, IT'S BY KID
+## MAKES SENSE TO DROP FOR NOW - COME BACK LATER, MAY TEST WHETHER ALL KIDS VS UNIQUE RPTS MATTERS FOR REGRESSION
+
+
 ## current script is all children - should probably do unique reports - so first eliminate dup rptID, then count
 for(i in (1:length(files))){
 dat<-ncands.fwf(dat=files[i], "H:/ncands-fc/ncandskey2012.csv")

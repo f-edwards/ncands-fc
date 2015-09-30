@@ -18,42 +18,29 @@ files<-c("Child2012v1.dat"
 	"Child2005v1a.dat", "Child2004_v1a.dat"
 	)
 year<-c(2012, 2010, 2009, 2008, 2007, 2006, 2005, 2004)
-state.out<-list()
+cnty.out<-list()
 
-### THIS IS FOR ALL CHIDLREN SUBJECT TO REPORT, INCLUDING MULTIPLE KIDS ON SAME RPT
+
 for(i in (1:length(files))){
 dat<-ncands.fwf(dat=files[i], "H:/ncands-fc/ncandskey2012.csv")
 dat<-ncandsclean(dat)
-state.count<- dat %>%
-	group_by(st)%>%
-	summarise(report_child=n(),
-		reports=n_distinct(RptID),
+dat<-dat[!(duplicated(dat$RptID)),]
+cnty.unique.rpt<- dat %>%
+	group_by(cnty)%>%
+	summarise(reports=n_distinct(RptID),
 		rpt.police=sum('%in%'(rptsrc, "cj")),
 		rpt.edu=sum('%in%'(rptsrc, "education")),
 		rpt.med=sum('%in%'(rptsrc, "medical")),
 		rpt.welf=sum('%in%'(rptsrc, "socserv"))
 		)
-state.count$year<-year[i]
-state.out[[i]]<-state.count
+
+cnty.unique.rpt$year<-year[i]
+cnty.out[[i]]<-state.unique.rpt
 rm(dat)
 
 }
 
-# dat<-read.csv("Child2011.csv")
-# state.unique.rpt<- dat %>%
-# 	group_by(st)%>%
-# 	summarise(report_child=n(),
-# 		reports=n_distinct(RptID),
-# 		rpt.police=sum('%in%'(rptsrc, "cj")),
-# 		rpt.edu=sum('%in%'(rptsrc, "education")),
-# 		rpt.med=sum('%in%'(rptsrc, "medical")),
-# 		rpt.welf=sum('%in%'(rptsrc, "socserv")),
-# 		)
-# year<-2011
-# state.count$year<-year
-# state.out[[9]]<-state.count
-# rm(dat)
+county.out<-do.call("rbind", cnty.out)
+write.csv(county.out, "rpt-count-county-unique.csv")
 
-st.out<-do.call("rbind", state.out)
-write.csv(st.out, "rpt-count.csv")
-
+### screening out rates may vary - might want to control for proportion screened out at state level

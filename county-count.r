@@ -24,8 +24,7 @@ cnty.out<-list()
 for(i in (1:length(files))){
 dat<-ncands.fwf(dat=files[i], "H:/ncands-fc/ncandskey2012.csv")
 dat<-ncandsclean(dat)
-dat<-dat[!(duplicated(dat$RptID)),]
-cnty.unique.rpt<- dat %>%
+cnty.rpt<- dat %>%
 	group_by(cnty)%>%
 	summarise(reports=n_distinct(RptID),
 		rpt.police=sum('%in%'(rptsrc, "cj")),
@@ -34,7 +33,7 @@ cnty.unique.rpt<- dat %>%
 		rpt.welf=sum('%in%'(rptsrc, "socserv"))
 		)
 
-cnty.unique.rpt$year<-year[i]
+cnty.rpt$year<-year[i]
 cnty.out[[i]]<-state.unique.rpt
 rm(dat)
 

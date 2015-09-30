@@ -18,23 +18,26 @@ files<-c("Child2012v1.dat"
 	"Child2005v1a.dat", "Child2004_v1a.dat"
 	)
 year<-c(2012, 2010, 2009, 2008, 2007, 2006, 2005, 2004)
-state.out<-list()
+state.out.unique.rpt<-list() 
 
-### THIS IS FOR ALL CHIDLREN SUBJECT TO REPORT, INCLUDING MULTIPLE KIDS ON SAME RPT
 for(i in (1:length(files))){
 dat<-ncands.fwf(dat=files[i], "H:/ncands-fc/ncandskey2012.csv")
 dat<-ncandsclean(dat)
-state.count<- dat %>%
+
+### ONLY CAPTURES COUNT OF UNIQUE REPORT IDS
+dat<-dat[!(duplicated(dat$RptID)),]
+state.unique.rpt<- dat %>%
 	group_by(st)%>%
-	summarise(report_child=n(),
-		reports=n_distinct(RptID),
+	summarise(reports=n_distinct(RptID),
 		rpt.police=sum('%in%'(rptsrc, "cj")),
 		rpt.edu=sum('%in%'(rptsrc, "education")),
 		rpt.med=sum('%in%'(rptsrc, "medical")),
 		rpt.welf=sum('%in%'(rptsrc, "socserv"))
 		)
-state.count$year<-year[i]
-state.out[[i]]<-state.count
+
+state.unique.rpt$year<-year[i]
+state.out.unique.rpt[[i]]<-state.unique.rpt
+
 rm(dat)
 
 }
@@ -54,6 +57,8 @@ rm(dat)
 # state.out[[9]]<-state.count
 # rm(dat)
 
-st.out<-do.call("rbind", state.out)
-write.csv(st.out, "rpt-count.csv")
+st.out<-do.call("rbind", state.out.unique.rpt)
+st.out[st.out$st=="PA", 2:6] <- NA ## PA as missing, DOESN'T COUNT UNIQUE REPORTS, ONLY COUNTS ALL KIDS
+write.csv(st.out, "rpt-count-unique.csv")
 
+### screening out rates may vary - might want to control for proportion screened out at state level

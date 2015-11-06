@@ -44,5 +44,5 @@ rm(dat)
 }
 
 county.out<-do.call("rbind", cnty.out)
-write.csv(county.out, "rpt-count-county.csv")
+write.csv(county.out, "county.csv")
 q(save="no")

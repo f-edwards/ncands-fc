@@ -71,7 +71,8 @@ f.keeps<-c(4, 6, 7, 11, 14, 15, 16, 17, 19, 22, 24, 25, 27, 30)
 dat1<-dat%>%
   filter(funct%in%c(f.names[f.keeps]))%>%
   filter(FIPS.co!="")%>%
-  select(.,-c(ft.emp, ft.pay, pt.emp, pt.pay, pt.hrs))%>%
+  mutate(tot.emp=ft.emp+pt.emp)%>% ### OPT FOR SUM OF FT AND PT EMPLOYEES FOR NOW - CAN CHANGE
+  select(.,-c(ft.emp, ft.pay, pt.emp, pt.pay, pt.hrs, ft.emp.eq))%>%
   mutate(FIPS=paste(FIPS.st, FIPS.co, sep=""))
 
 ### SPREAD FUNCT INTO FT EQUIVALENT COLUMNS BY CAT
@@ -81,10 +82,16 @@ dat1<-dat%>%
 
 dat2<-dat1%>%
   group_by(year, id)%>%
-  spread(value=ft.emp.eq, key=funct, fill=0)
+  spread(value=tot.emp, key=funct, fill=0)
  
 dat3<-dat2%>%
   group_by(state, county, FIPS.st, FIPS.co, FIPS, year)%>%
-  dplyr::summarise(cops=sum(`Police Officers Only`))  
+  summarise(lawenf=sum(`Police Officers Only`+ `Judicial and Legal` + `Other Police Employees`),
+            edu=sum(`Elem and Sec Instructional Employees`+ `Elem and Sec Other Employees`+ `Local Libraries`),
+            health=sum(Health+Hospitals),
+            welfare=sum(`Public Welfare` + `Social Insurance Administration`),
+            totemp=sum(Total)
+            )  
 
+write.csv(dat3, "H:/data/county-emp.csv", col.names=TRUE, row.names=FALSE)
 

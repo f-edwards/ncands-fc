@@ -2,7 +2,6 @@ rm(list=ls())
 require(TTR)
 require(data.table)
 require(dplyr)
-library(plyr)
 library(tidyr)
 require(Amelia)
 library(nlme)
@@ -26,13 +25,40 @@ z<-do.call("rbind",(strsplit(pop$cname, ", ")))
 pop$cname<-z[,1]
 pop$state<-z[,2]
 
-rpt<-left_join(pop, mal, by=c("state", "FIPS", "year" ))
+rpt<-left_join(mal, pop, by=c("FIPS", "year"))
+
+emp<-read.csv("county-emp.csv", head=TRUE, stringsAsFactors = FALSE)
+
+rpt<-left_join(rpt, emp, by=c("FIPS", "year"))
+
+rpt<-rpt%>%
+  filter(year>2006)%>%
+  filter(FIPS>0)%>%
+  filter(!(is.na(cname)))%>%
+  select(-c(year.dup, state.y))
+
+### ID COUNTIES WITH MISSING EMP DATA, PRESENT RPT DATA
+z<-which(is.na(rpt$totemp))
+missing<-data.frame("st"=rpt[z,"state.x"], "county"=rpt[z,"cname"])
+
+### ID COUNTIES WITH MISSING RPTSRC DATA
+z.1<-which(is.na(rpt$rpt.inf))
+missing.rpt<-data.frame("st"=rpt[z.1,"state.x"], "county"=rpt[z.1,"cname"], "year"=rpt[z.1,"year"])
+
 ### Drop counties missing all report data (small pop)
-rpt<-rpt[-(which(is.na(rpt$tot.rpt))),]
+rpt<-rpt[-(which(is.na(rpt$rpt.inf))),]
+rpt<-rpt[-(which(is.na(rpt$totemp))),]
 rpt$rpt.pc<-rpt$tot.rpt/rpt$child.pop
+rpt$year.c<-rpt$year-2007
+
 
 ### Unconditional growth model for reports per capita
-uc.gr<-lme(fixed=rpt.pc~year,
-           random=~1+year|cname, 
+m0<-lme(fixed=rpt.pc~year,
+           random=~1+year|FIPS, 
            data=rpt)
+
+m1<-lme(fixed=rpt.pc~I(totemp/child.pop)+year.c,
+        random=~1+year.c|FIPS, 
+        data=rpt)
+
 

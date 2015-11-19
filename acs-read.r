@@ -4,18 +4,21 @@ library(dplyr)
 
 setwd("H:/census")
 
-colClasses=sapply(fread("usa_0032.csv", nrows=100), class)
+colClasses=sapply(fread("usa_00032.csv", nrows=100), class)
 colClasses[5:6]<-"character"
 dat<-fread("usa_00032.csv", sep=",", 
 	drop=c(2,3,4,8,9),
 	colClasses=colClasses)
 
+# if(nchar(dat$COUNTYFIPS)==)
+### SMALL N OF
+
 dat2<-dat%>%
-	mutate(FIPS=paste(STATEFIP, COUNTYFIPS, sep=""))%>%
-	group_by(FIPS, YEAR)%>%
+	#mutate(FIPS=paste(STATEFIP, COUNTYFIPS, sep=""))%>%
+	group_by(STATEFIP, COUNTYFIPS, YEAR)%>%
 	summarise(totpop=sum(PERWT),
-		chpop=sum((age<18)*PERWT),
-		chpov=sum((age<18)*(POVERTY<150)*(PERWT)),
+		chpop=sum((AGE<18)*PERWT),
+		chpov=sum((AGE<18)*(POVERTY<150)*(PERWT)),
 		blkpop=sum((RACE==2)*PERWT),
 		amindpop=sum((RACE==3)*PERWT),
 		unemp=sum((EMPSTAT==2)*PERWT),

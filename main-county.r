@@ -31,6 +31,12 @@ emp<-read.csv("county-emp.csv", head=TRUE, stringsAsFactors = FALSE)
 
 rpt<-left_join(rpt, emp, by=c("FIPS", "year"))
 
+acs<-read.csv("H:/census/acs-5yr-co.csv", head=TRUE)
+names(acs)[c(9, 11, 4)]<-c("FIPS.st", "FIPS.co", "year")
+acs<-acs%>%
+  select(FIPS.st, FIPS.co, lessHS, pov2, unemp.rt, pov.rt, pctblk, pctlat, pctwht)
+rpt<-left_join(rpt, acs, by=c("FIPS.st", "FIPS.co"))
+
 rpt<-rpt%>%
   filter(year>2006)%>%
   filter(FIPS>0)%>%
@@ -45,6 +51,10 @@ missing<-data.frame("st"=rpt[z,"state.x"], "county"=rpt[z,"cname"])
 z.1<-which(is.na(rpt$rpt.inf))
 missing.rpt<-data.frame("st"=rpt[z.1,"state.x"], "county"=rpt[z.1,"cname"], "year"=rpt[z.1,"year"])
 
+### ID COUNTIES WITH MISSING POP DATA
+z.2<-which(is.na(rpt$totpop))
+missing.acs<-data.frame("st"=rpt[z.2,"state.x"], "county"=rpt[z.2,"cname"], "year"=rpt[z.2,"year"])
+
 ### Drop counties missing all report data (small pop)
 rpt<-rpt[-(which(is.na(rpt$rpt.inf))),]
 rpt<-rpt[-(which(is.na(rpt$totemp))),]
@@ -54,11 +64,11 @@ rpt$year.c<-rpt$year-2007
 
 ### Unconditional growth model for reports per capita
 m0<-lme(fixed=rpt.pc~year,
-           random=~1+year|FIPS, 
+           random=~year|FIPS, 
            data=rpt)
 
-m1<-lme(fixed=rpt.pc~I(totemp/child.pop)+year.c,
+m1<-lme(fixed=rpt.pc~I(totemp/child.pop)+pov2+pctblk+year.c,
         random=~1+year.c|FIPS, 
-        data=rpt)
+        data=rpt, na.action="na.omit")
 
 

@@ -16,6 +16,9 @@ mal<-read.csv("H:/data/state-malt.csv")
 names(mal)[2]<-"stname"
 
 state<-read.csv("H:/ncands-fc/statedat.csv")
+state<-state[,-1]
+state<-state[,-(3:58)]
+
 ### STATE LEVEL MEASURES
 state$police.pc<-state$police.ft.emp/state$pop
 state$welfare.pc<-state$welfare.ft.emp/state$pop
@@ -39,12 +42,21 @@ s.dat<-s.dat%>%
 
 s.dat$rpts.pc<-s.dat$tot.rpt/s.dat$child
 
+
 ggplot(data=s.dat,
-       aes(x=year, y=rpts.pc))+
-  geom_point()+
-  geom_line(stat="smooth", method="lm", se=FALSE)+
+       aes(x=year))+
+  geom_line(aes(y=(rpt.cj/tot.rpt), 
+            stat="smooth", method="loess", se=FALSE))+
+  geom_line(aes(y=(rpt.edu/tot.rpt), 
+                stat="smooth", method="loess", se=FALSE))+
+  geom_line(aes(y=(rpt.med/tot.rpt), 
+                stat="smooth", method="loess", se=FALSE))+
+  geom_line(aes(y=(rpt.inf/tot.rpt),
+                stat="smooth", method="loess", se=FALSE))+
   facet_wrap(~stname)+
   theme_bw()
+
+
 
 ### UNCONDITIONAL GROWTH
 m0<-lmer(rpts.pc~scale(year)+
@@ -76,8 +88,21 @@ m1<-lmer(rpts.pc~scale(pctblk)+
          data=s.dat)
 
 ### POLICE REPORTS - RATES OR COUNTS? 
-m.pol.0<-glmer(tot.rpt~pctblk+chpovrt+unemprt+childnot2par+gsppercap+
-	year+(year|state),
+m.pol.0<-glmer(rpt.cj~scale(police.pc)+
+                 scale(year)+
+                 (scale(year)|state)+
+                 (1|obs),
+               offset=log(child),
+               data=s.dat,
+               family=poisson)
+
+m.pol.1<-glmer(rpt.cj~scale(police.pc)+
+ scale(pctblk)+scale(chpovrt)+
+  scale(unemprt)+scale(childnot2par)+
+   scale(gsppercap)+
+   scale(I(incartot/pop))+scale(victims)+
+	scale(year)+(scale(year)|state)+
+   (1|obs),
 	offset=log(child),
 	data=s.dat,
 	family=poisson)

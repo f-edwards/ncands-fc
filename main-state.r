@@ -42,18 +42,18 @@ s.dat<-s.dat%>%
 
 s.dat$rpts.pc<-s.dat$tot.rpt/s.dat$child
 
+ggplot(data=s.dat,
+       aes(x=year, y=rpts.pc))+
+  geom_point()+
+  facet_wrap(~stname)+
+  theme_bw()
 
 ggplot(data=s.dat,
        aes(x=year))+
-  geom_line(aes(y=(rpt.cj/tot.rpt), 
-            stat="smooth", method="loess", se=FALSE))+
-  geom_line(aes(y=(rpt.edu/tot.rpt), 
-                stat="smooth", method="loess", se=FALSE))+
-  geom_line(aes(y=(rpt.med/tot.rpt), 
-                stat="smooth", method="loess", se=FALSE))+
-  geom_line(aes(y=(rpt.inf/tot.rpt),
-                stat="smooth", method="loess", se=FALSE))+
-  facet_wrap(~stname)+
+  geom_point(aes(y=(rpt.cj/tot.rpt)), colour="red", size=2, alpha=0.7)+
+  geom_point(aes(y=(rpt.edu/tot.rpt)), colour="grey1", size=2, alpha=0.7)+
+  geom_point(aes(y=(rpt.med/tot.rpt)), colour="blue", size=2, alpha=0.7)+
+    facet_wrap(~stname)+
   theme_bw()
 
 

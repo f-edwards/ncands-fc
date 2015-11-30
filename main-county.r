@@ -130,3 +130,12 @@ for(i in (1:m)){
   gamma_SE_imp[i,]<-summary(m0.i)$tTable[,"Std.Error"]
 }
 
+
+### names:  [1] "FIPS"           "state"          "tot.rpt"        "unique.reports" "victims"       
+# [6] "rpt.inf"        "rpt.daycr"      "rpt.edu"        "rpt.cj"         "rpt.med"       
+# [11] "rpt.mh"         "rpt.socserv"    "rpt.foster"     "year"           "cname"         
+# [16] "year.dup"       "child.pop"      "stname"         "county"         "FIPS.st"       
+# [21] "FIPS.co"        "lawenf"         "edu"            "health"         "welfare"       
+# [26] "totemp"         "totpop"         "chpop"          "chpov"          "blkpop"        
+# [31] "amindpop"       "unemp"          "labforce"       "kids2par"       "rpts.pc"       
+# [36] "ch.pov.rt"      "year.c" 

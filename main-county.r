@@ -100,32 +100,23 @@ ggplot(data=samp.plot,
 m<-round((sum(is.na(rpt$ch.pov.rt))/nrow(rpt))*100)
 bounds<-cbind(1:ncol(rpt), rep(0, ncol(rpt)), rep(Inf, ncol(rpt)))
 rpt$year.c<-rpt$year-2007
-rpt$obs<-1:nrow(rpt)
 rpt.imp<-amelia(rpt, ts="year", cs="FIPS", idvars=c("state", "year.dup", "cname", "stname", "county",
                                                 "FIPS.st", "FIPS.co", "year.c"),
                 m=28, polytime=1, empri=0.01*nrow(rpt), bounds=bounds)
 
 ### Unconditional growth model for reports per capita
-m0<-glmer(tot.rpt~year.c+
-  (year.c|FIPS)+(1|obs), 
-        data=rpt, na.action="na.omit",
-        offset=log(child.pop),
-        family=poisson)
+m0<-lme(fixed= rpts.pc ~ year.c,
+              random=~ year.c|FIPS, 
+              data=rpt, na.action = "na.omit")
 
-m1<-glmer(tot.rpt~year.c+scale(I(totemp/child.pop))+
-  (year.c|FIPS)+(1|obs), 
-        data=rpt, na.action="na.omit",
-        offset=log(child.pop),
-        family=poisson)
+m1<-lme(fixed=tot.rpt~year.c+scale(I(totemp/child.pop)),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
 
-m2<-glmer(tot.rpt~year.c+scale(I(totemp/child.pop))+
-  scale(ch.pov.rt)+scale(I(unemp/labforce))+
-  scale(I(blkpop/totpop))+scale(I(amindpop/totpop))+
-  scale(I(1-(kids2par/child.pop)))+
-  (year.c|FIPS)+(1|obs), 
-        data=rpt, na.action="na.omit",
-        offset=log(child.pop),
-        family=poisson)
+m2<-lme(fixed=tot.rpt~year.c+scale(I(totemp/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
 
 
 #### GOT A TON OF MODELS TO WRITE - put them here, loop over, merge results
@@ -149,38 +140,33 @@ colnames(g.t.2) <- colnames(g.t.se.2) <- names(fixef(m2))
 for(i in (1:m)){
   dat<-rpt.imp$imputations[[i]]
 
-  m0<-glmer(tot.rpt~year.c+
-    (year.c|FIPS)+(1|obs), 
-          data=dat,
-          offset=log(child.pop),
-          family=poisson)
+  m0.i<-lme(fixed=rpts.pc~year.c,
+    random=~year.c|FIPS, 
+          data=dat)
 
-  m1<-glmer(tot.rpt~year.c+scale(I(totemp/child.pop))+
-    (year.c|FIPS)+(1|obs), 
-          data=dat, 
-          offset=log(child.pop),
-          family=poisson)
-
-  m2<-glmer(tot.rpt~year.c+scale(I(totemp/child.pop))+
-    scale(ch.pov.rt)+scale(I(unemp/labforce))+
-    scale(I(blkpop/totpop))+scale(I(amindpop/totpop))+
-    scale(I(1-(kids2par/child.pop)))+
-    (year.c|FIPS)+(1|obs), 
-          data=dat, 
-          offset=log(child.pop),
-          family=poisson)
+  m1.i<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop)),
+          random=~year.c|FIPS, 
+          data=dat)
+  
+  m2.i<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop))+
+            scale(ch.pov.rt),
+          random=~year.c|FIPS, 
+          data=dat)
 
   g.t.0[i,]<-fixef(m0.i)
   g.t.se.0[i,]<-summary(m0.i)$tTable[,"Std.Error"]
 
   g.t.1[i,]<-fixef(m1.i)
   g.t.se.1[i,]<-summary(m1.i)$tTable[,"Std.Error"]
-
+  
   g.t.2[i,]<-fixef(m2.i)
   g.t.se.2[i,]<-summary(m2.i)$tTable[,"Std.Error"]
 
 }
 
+m0.t<-mi.meld(g.t.0, g.t.se.0)
+m1.t<-mi.meld(g.t.1, g.t.se.1)
+m2.t<-mi.meld(g.t.2, g.t.se.2)
 
 ### names:  [1] "FIPS"           "state"          "tot.rpt"        "unique.reports" "victims"       
 # [6] "rpt.inf"        "rpt.daycr"      "rpt.edu"        "rpt.cj"         "rpt.med"       

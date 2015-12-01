@@ -7,6 +7,7 @@ library(nlme)
 library(lme4)
 library(ggplot2)
 library(arm)
+library(stargazer)
 
 set.seed(1)
 setwd("H:/Data")
@@ -55,65 +56,93 @@ rpt<-left_join(rpt, acs, by=c("FIPS.st", "FIPS.co", "year"))
 
 rpt<-rpt%>%
   mutate(rpts.pc=tot.rpt/child.pop,
-         ch.pov.rt=chpov/child.pop)
+        ch.pov.rt=chpov/child.pop,
+        rpts.edu.pc=rpt.edu/child.pop,
+        rpts.cj.pc=rpt.cj/child.pop,
+        rpts.med.pc=rpt.med/child.pop,
+        rpts.welf.pc=rpt.socserv/child.pop
+        )
+
+# [6] "rpt.inf"        "rpt.daycr"      "rpt.edu"        "rpt.cj"         "rpt.med"       
+# [11] "rpt.mh"         "rpt.socserv"    "rpt.foster"  
 
 ### ID COUNTIES WITH MISSING EMP DATA, PRESENT RPT DATA
-z<-which(is.na(rpt$totemp))
-missing<-data.frame("st"=rpt[z,"state"], "county"=rpt[z,"cname"], "year"=rpt[z,"year"])
+  z<-which(is.na(rpt$totemp))
+  missing<-data.frame("st"=rpt[z,"state"], "county"=rpt[z,"cname"], "year"=rpt[z,"year"])
 
 ### ID COUNTIES WITH MISSING RPTSRC DATA
-z.1<-which(is.na(rpt$rpt.inf))
-missing.rpt<-data.frame("st"=rpt[z.1,"state"], "county"=rpt[z.1,"cname"], "year"=rpt[z.1,"year"])
+  z.1<-which(is.na(rpt$rpt.inf))
+  missing.rpt<-data.frame("st"=rpt[z.1,"state"], "county"=rpt[z.1,"cname"], "year"=rpt[z.1,"year"])
 
 ### ID COUNTIES WITH MISSING POP DATA
-z.2<-which(is.na(rpt$ch.pov.rt))
-missing.acs<-data.frame("st"=rpt[z.2,"state"], "county"=rpt[z.2,"cname"], "year"=rpt[z.2,"year"])
+  z.2<-which(is.na(rpt$ch.pov.rt))
+  missing.acs<-data.frame("st"=rpt[z.2,"state"], "county"=rpt[z.2,"cname"], "year"=rpt[z.2,"year"])
 
 ### MAP MISSINGNESS
-missmap(rpt)
+  missmap(rpt)
 
-z<-sample(unique(rpt$FIPS), 50, replace=FALSE)
+  z<-sample(unique(rpt$FIPS), 50, replace=FALSE)
 
-samp.plot<-rpt%>%
-  filter(FIPS%in%z)
+  samp.plot<-rpt%>%
+    filter(FIPS%in%z)
 
-ggplot(data=samp.plot,
-       aes(x=year, y=scale(ch.pov.rt)))+
-  geom_point()+
-  facet_wrap(~county)+
-  theme_bw()
+  ggplot(data=samp.plot,
+         aes(x=year, y=scale(ch.pov.rt)))+
+    geom_point()+
+    facet_wrap(~county)+
+    theme_bw()
 
 
-ggplot(data=samp.plot,
-       aes(x=year, y=scale(rpts.pc)))+
-  geom_point()+
-  facet_wrap(~county)+
-  theme_bw()
+  ggplot(data=samp.plot,
+         aes(x=year, y=scale(rpts.pc)))+
+    geom_point()+
+    facet_wrap(~county)+
+    theme_bw()
 
-ggplot(data=samp.plot,
-       aes(x=year, y=scale(edu/child.pop)))+
-  geom_point()+
-  facet_wrap(~county)+
-  theme_bw()
+  ggplot(data=samp.plot,
+         aes(x=year, y=scale(edu/child.pop)))+
+    geom_point()+
+    facet_wrap(~county)+
+    theme_bw()
 
 ### Impute
-m<-round((sum(is.na(rpt$ch.pov.rt))/nrow(rpt))*100)
-bounds<-cbind(1:ncol(rpt), rep(0, ncol(rpt)), rep(Inf, ncol(rpt)))
-rpt$year.c<-rpt$year-2007
-rpt.imp<-amelia(rpt, ts="year", cs="FIPS", idvars=c("state", "year.dup", "cname", "stname", "county",
-                                                "FIPS.st", "FIPS.co", "year.c"),
-                m=28, polytime=1, empri=0.01*nrow(rpt), bounds=bounds)
+  m<-round((sum(is.na(rpt$ch.pov.rt))/nrow(rpt))*100)
+  bounds<-cbind(1:ncol(rpt), rep(0, ncol(rpt)), rep(Inf, ncol(rpt)))
+  rpt$year.c<-rpt$year-2007
+  rpt.imp<-amelia(rpt, ts="year", cs="FIPS", idvars=c("state", "year.dup", "cname", "stname", "county",
+                                                  "FIPS.st", "FIPS.co", "year.c"),
+                  m=28, polytime=1, empri=0.01*nrow(rpt), bounds=bounds)
 
 ### Unconditional growth model for reports per capita
 m0<-lme(fixed= rpts.pc ~ year.c,
               random=~ year.c|FIPS, 
               data=rpt, na.action = "na.omit")
 
-m1<-lme(fixed=tot.rpt~year.c+scale(I(totemp/child.pop)),
+m1<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop)),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
 
-m2<-lme(fixed=tot.rpt~year.c+scale(I(totemp/child.pop))+
+m2<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+e2<-lme(fixed=rpts.edu.pc~year.c+scale(I(edu/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+c2<-lme(fixed=rpts.cj.pc~year.c+scale(I(lawenf/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+med2<-lme(fixed=rpts.med.pc~year.c+scale(I(health/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+w2<-lme(fixed=rpts.edu.pc~year.c+scale(I(welfare/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
@@ -129,9 +158,11 @@ g.t.1 <- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m1)))
 g.t.se.1 <- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m1)))
 colnames(g.t.1) <- colnames(g.t.se.1) <- names(fixef(m1))
 
-g.t.2 <- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
-g.t.se.2 <- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
-colnames(g.t.2) <- colnames(g.t.se.2) <- names(fixef(m2))
+g.t.2 <- g.e.2<-g.c.2<-g.med.2<-g.w.2<- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
+g.t.se.2 <- g.e.se.2<=g.c.se.2<-g.med.se.2<-g.w.se.2<-matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
+colnames(g.t.2) <- colnames(g.t.se.2) <- colnames(g.e.2)<-
+  colnames(g.c.2)<-colnames(g.med.2)<-colnames(g.w.2)<-colnames(g.e.se.2)<-colnames(g.c.se.2)<-
+  colnames(g.med.se.2)<-colnames(g.w.se.2)<-names(fixef(m2))
 
 ### list of models
 ### tot.rpts as counts - 
@@ -153,6 +184,26 @@ for(i in (1:m)){
           random=~year.c|FIPS, 
           data=dat)
 
+  e2.i<-lme(fixed=rpts.edu.pc~year.c+scale(I(edu/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+c2.i<-lme(fixed=rpts.cj.pc~year.c+scale(I(lawenf/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+med2.i<-lme(fixed=rpts.med.pc~year.c+scale(I(health/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
+w2.i<-lme(fixed=rpts.edu.pc~year.c+scale(I(welfare/child.pop))+
+  scale(ch.pov.rt),
+  random=~year.c|FIPS, 
+        data=rpt, na.action="na.omit")
+
   g.t.0[i,]<-fixef(m0.i)
   g.t.se.0[i,]<-summary(m0.i)$tTable[,"Std.Error"]
 
@@ -162,17 +213,42 @@ for(i in (1:m)){
   g.t.2[i,]<-fixef(m2.i)
   g.t.se.2[i,]<-summary(m2.i)$tTable[,"Std.Error"]
 
+  g.e.2[i,]<-fixef(e2.i)
+  g.e.se.2[i,]<-summary(e2.i)$tTable[,"Std.Error"]
+
+  g.c.2[i,]<-fixef(c2.i)
+  g.c.se.2[i,]<-summary(c2.i)$tTable[,"Std.Error"]
+
+  g.med.2[i,]<-fixef(med2.i)
+  g.med.se.2[i,]<-summary(med2.i)$tTable[,"Std.Error"]
+
+  g.w.2[i,]<-fixef(w2.i)
+  g.w.se.2[i,]<-summary(w2.i)$tTable[,"Std.Error"]
+
 }
 
+#### Combine results
 m0.t<-mi.meld(g.t.0, g.t.se.0)
 m1.t<-mi.meld(g.t.1, g.t.se.1)
 m2.t<-mi.meld(g.t.2, g.t.se.2)
+c2.t<-mi.meld(g.c.2, g.c.se.2)
+e2.t<-mi.meld(g.e.2, g.e.se.2)
+med2.t<-mi.meld(g.med.2, g.med.se.2)
+w2.t<-mi.meld(g.w.2, g.w.se.2)
 
-### names:  [1] "FIPS"           "state"          "tot.rpt"        "unique.reports" "victims"       
-# [6] "rpt.inf"        "rpt.daycr"      "rpt.edu"        "rpt.cj"         "rpt.med"       
-# [11] "rpt.mh"         "rpt.socserv"    "rpt.foster"     "year"           "cname"         
-# [16] "year.dup"       "child.pop"      "stname"         "county"         "FIPS.st"       
-# [21] "FIPS.co"        "lawenf"         "edu"            "health"         "welfare"       
-# [26] "totemp"         "totpop"         "chpop"          "chpov"          "blkpop"        
-# [31] "amindpop"       "unemp"          "labforce"       "kids2par"       "rpts.pc"       
-# [36] "ch.pov.rt"      "year.c" 
+#### LATEX OUTPUT
+stargazer(list(m0.i, m1.i, m2.i),
+  coef=list(m0.t[[1]], m1.t[[1]], m2.t[[1]]),
+  se=list(m0.t[[2]], m1.t[[2]], m2.t[[2]]),
+  out="tot-models.tex",
+  style="asr",
+  title="Total Reports Per Capita"
+  )
+
+stargazer(list(e2.i, c2.i, med2.i, w2.i),
+  coef=list(e2.t[[1]], c2.t[[1]], med2.t[[1]], w2.t[[1]]),
+  se=list(e2.t[[2]], c2.t[[2]], med2.t[[2]], w2.t[[2]]),
+  out="emp-models.tex",
+  style="asr",
+  title="Total Reports Per Capita"
+  )

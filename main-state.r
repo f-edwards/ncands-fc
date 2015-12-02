@@ -216,9 +216,10 @@ stargazer(list(m.socserv.i),
           title="Predictors of Social Services reports per capita"
 )
 
-plotreg(list(m.pol, m.pol.i, m.socserv, m.socserv.i),
+plotreg(list(m.pol, m.pol.i, m.socserv, m.socserv.i), file="H:/fc-surv-pres/model-plots.pdf",
         override.coef=list(as.vector(fixef(m.pol)),
-          as.vector(m.pol.t[[1]])), 
-        override.se=list(as.vector(summary(m.pol)$tTable[,"Std.Error"]), as.vector(m.pol.t[[2]])), 
+          as.vector(m.pol.t[[1]]), as.vector(fixef(m.socserv)), as.vector(m.socserv.t[[1]])), 
+        override.se=list(as.vector(summary(m.pol)$tTable[,"Std.Error"]), as.vector(m.pol.t[[2]]),
+                         as.vector(summary(m.socserv)$tTable[,"Std.Error"]),  as.vector(m.socserv.t[[2]])), 
         custom.model.names=c("Police Reporting w/o MI", "Police Reporting w/ MI", 
                              "Social Services w/o MI", "Social Services w/ MI"))

@@ -114,35 +114,35 @@ rpt<-rpt%>%
                   m=28, polytime=1, empri=0.01*nrow(rpt), bounds=bounds)
 
 ### Unconditional growth model for reports per capita
-m0<-lme(fixed= rpts.pc ~ year.c,
+m0<-lme(fixed= scale(rpts.pc) ~ year.c,
               random=~ year.c|FIPS, 
               data=rpt, na.action = "na.omit")
 
-m1<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop)),
+m1<-lme(fixed=scale(rpts.pc)~year.c+scale(I(totemp/child.pop)),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
 
-m2<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop))+
+m2<-lme(fixed=scale(rpts.pc)~year.c+scale(I(totemp/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
 
-e2<-lme(fixed=rpts.edu.pc~year.c+scale(I(edu/child.pop))+
+e2<-lme(fixed=scale(rpts.edu.pc)~year.c+scale(I(edu/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
 
-c2<-lme(fixed=rpts.cj.pc~year.c+scale(I(lawenf/child.pop))+
+c2<-lme(fixed=scale(rpts.cj.pc)~year.c+scale(I(lawenf/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
 
-med2<-lme(fixed=rpts.med.pc~year.c+scale(I(health/child.pop))+
+med2<-lme(fixed=scale(rpts.med.pc)~year.c+scale(I(health/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
 
-w2<-lme(fixed=rpts.edu.pc~year.c+scale(I(welfare/child.pop))+
+w2<-lme(fixed=scale(rpts.welf.pc)~year.c+scale(I(welfare/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
         data=rpt, na.action="na.omit")
@@ -159,10 +159,12 @@ g.t.se.1 <- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m1)))
 colnames(g.t.1) <- colnames(g.t.se.1) <- names(fixef(m1))
 
 g.t.2 <- g.e.2<-g.c.2<-g.med.2<-g.w.2<- matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
-g.t.se.2 <- g.e.se.2<=g.c.se.2<-g.med.se.2<-g.w.se.2<-matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
-colnames(g.t.2) <- colnames(g.t.se.2) <- colnames(g.e.2)<-
-  colnames(g.c.2)<-colnames(g.med.2)<-colnames(g.w.2)<-colnames(g.e.se.2)<-colnames(g.c.se.2)<-
-  colnames(g.med.se.2)<-colnames(g.w.se.2)<-names(fixef(m2))
+g.t.se.2 <- g.e.se.2<-g.c.se.2<-g.med.se.2<-g.w.se.2<-matrix(0, nrow=rpt.imp$m, ncol=length(fixef(m2)))
+colnames(g.t.2)<-colnames(g.t.se.2)<-names(fixef(m2))
+colnames(g.e.2)<-colnames(g.e.se.2)<-names(fixef(e2))
+colnames(g.c.2)<-colnames(g.c.se.2)<-names(fixef(c2))
+colnames(g.med.2)<-colnames(g.med.se.2)<-names(fixef(med2))
+colnames(g.w.2)<-colnames(g.w.se.2)<-names(fixef(w2))
 
 ### list of models
 ### tot.rpts as counts - 
@@ -171,38 +173,38 @@ colnames(g.t.2) <- colnames(g.t.se.2) <- colnames(g.e.2)<-
 for(i in (1:m)){
   dat<-rpt.imp$imputations[[i]]
 
-  m0.i<-lme(fixed=rpts.pc~year.c,
+  m0.i<-lme(fixed=scale(rpts.pc)~year.c,
     random=~year.c|FIPS, 
           data=dat)
 
-  m1.i<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop)),
+  m1.i<-lme(fixed=scale(rpts.pc)~year.c+scale(I(totemp/child.pop)),
           random=~year.c|FIPS, 
           data=dat)
   
-  m2.i<-lme(fixed=rpts.pc~year.c+scale(I(totemp/child.pop))+
+  m2.i<-lme(fixed=scale(rpts.pc)~year.c+scale(I(totemp/child.pop))+
             scale(ch.pov.rt),
           random=~year.c|FIPS, 
           data=dat)
 
-  e2.i<-lme(fixed=rpts.edu.pc~year.c+scale(I(edu/child.pop))+
+  e2.i<-lme(fixed=scale(rpts.edu.pc)~year.c+scale(I(edu/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
-        data=rpt, na.action="na.omit")
+        data=dat, na.action="na.omit")
 
-c2.i<-lme(fixed=rpts.cj.pc~year.c+scale(I(lawenf/child.pop))+
+c2.i<-lme(fixed=scale(rpts.cj.pc)~year.c+scale(I(lawenf/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
-        data=rpt, na.action="na.omit")
+        data=dat, na.action="na.omit")
 
-med2.i<-lme(fixed=rpts.med.pc~year.c+scale(I(health/child.pop))+
+med2.i<-lme(fixed=scale(rpts.med.pc)~year.c+scale(I(health/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
-        data=rpt, na.action="na.omit")
+        data=dat, na.action="na.omit")
 
-w2.i<-lme(fixed=rpts.edu.pc~year.c+scale(I(welfare/child.pop))+
+w2.i<-lme(fixed=scale(rpts.welf.pc)~year.c+scale(I(welfare/child.pop))+
   scale(ch.pov.rt),
   random=~year.c|FIPS, 
-        data=rpt, na.action="na.omit")
+        data=dat, na.action="na.omit")
 
   g.t.0[i,]<-fixef(m0.i)
   g.t.se.0[i,]<-summary(m0.i)$tTable[,"Std.Error"]
@@ -240,15 +242,15 @@ w2.t<-mi.meld(g.w.2, g.w.se.2)
 stargazer(list(m0.i, m1.i, m2.i),
   coef=list(m0.t[[1]], m1.t[[1]], m2.t[[1]]),
   se=list(m0.t[[2]], m1.t[[2]], m2.t[[2]]),
-  out="tot-models.tex",
+  out="tot-county-models.tex",
   style="asr",
   title="Total Reports Per Capita"
   )
 
 stargazer(list(e2.i, c2.i, med2.i, w2.i),
-  coef=list(e2.t[[1]], c2.t[[1]], med2.t[[1]], w2.t[[1]]),
-  se=list(e2.t[[2]], c2.t[[2]], med2.t[[2]], w2.t[[2]]),
-  out="emp-models.tex",
+  coef=list(t(e2.t[[1]]), t(c2.t[[1]]), t(med2.t[[1]]), t(w2.t[[1]])),
+  se=list(t(e2.t[[2]]), t(c2.t[[2]]), t(med2.t[[2]]), t(w2.t[[2]])),
+  out="emp-county-models.tex",
   style="asr",
   title="Total Reports Per Capita"
   )

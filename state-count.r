@@ -35,16 +35,17 @@ for(i in (1:length(files))){
       group_by(StaTerr)%>%
       summarise(tot.rpt=n(),
                 unique.reports=n_distinct(RptID),
-                victims=sum(RptVictim==1),
+                victims=sum(RptVictim==1, na.rm=TRUE),
                 rpt.inf=sum(RptSrc==12|RptSrc==8|RptSrc==13|RptSrc==11|
-                              RptSrc==88|RptSrc==10|RptSrc==9),
-                rpt.daycr=sum(RptSrc==6),
-                rpt.edu=sum(RptSrc==5),
-                rpt.cj=sum(RptSrc==4),
-                rpt.med=sum(RptSrc==2),
-                rpt.mh=sum(RptSrc==3),
-                rpt.socserv=sum(RptSrc==1),
-                rpt.foster=sum(RptSrc==7))%>%
+                              RptSrc==10|RptSrc==9, na.rm=TRUE),
+                rpt.daycr=sum(RptSrc==6, na.rm=TRUE),
+                rpt.edu=sum(RptSrc==5, na.rm=TRUE),
+                rpt.cj=sum(RptSrc==4, na.rm=TRUE),
+                rpt.med=sum(RptSrc==2, na.rm=TRUE),
+                rpt.mh=sum(RptSrc==3, na.rm=TRUE),
+                rpt.socserv=sum(RptSrc==1, na.rm=TRUE),
+                rpt.foster=sum(RptSrc==7, na.rm=TRUE),
+                rpt.unk=sum(is.na(RptSrc))+sum(RptSrc==88, na.rm=TRUE)+sum(RptSrc==13, na.rm=TRUE)+sum(RptSrc==99, na.rm=TRUE))%>%
       mutate(year=year[i])
   }
   
@@ -57,15 +58,17 @@ for(i in (1:length(files))){
                 unique.reports=n_distinct(RptID),
                 victims=sum(IsVictim==1),
                 rpt.inf=sum(RptSrc==12|RptSrc==8|RptSrc==13|RptSrc==11|
-                              RptSrc==88|RptSrc==10|RptSrc==9),
+                              RptSrc==10|RptSrc==9),
                 rpt.daycr=sum(RptSrc==6),
                 rpt.edu=sum(RptSrc==5),
                 rpt.cj=sum(RptSrc==4),
                 rpt.med=sum(RptSrc==2),
                 rpt.mh=sum(RptSrc==3),
                 rpt.socserv=sum(RptSrc==1),
-                rpt.foster=sum(RptSrc==7))%>%
-      mutate(year=year[i])
+                rpt.foster=sum(RptSrc==7),
+                rpt.unk=sum(is.na(RptSrc))+sum(RptSrc==88, na.rm=TRUE)+sum(RptSrc==13, na.rm=TRUE)+
+                  sum(RptSrc==99, na.rm=TRUE))%>%
+        mutate(year=year[i])
   }
   
   if(year[i]==2004){
@@ -83,7 +86,9 @@ for(i in (1:length(files))){
                 rpt.med=sum(RptSrc==2),
                 rpt.mh=sum(RptSrc==3),
                 rpt.socserv=sum(RptSrc==1),
-                rpt.foster=sum(RptSrc==7))%>%
+                rpt.foster=sum(RptSrc==7),
+                rpt.unk=sum(is.na(RptSrc))+sum(RptSrc==88, na.rm=TRUE)+sum(RptSrc==13, na.rm=TRUE)+
+                  sum(RptSrc==99, na.rm=TRUE))%>%
       mutate(year=year[i])
   }
   
@@ -102,7 +107,9 @@ for(i in (1:length(files))){
                 rpt.med=sum(rptsrc==2),
                 rpt.mh=sum(rptsrc==3),
                 rpt.socserv=sum(rptsrc==1),
-                rpt.foster=sum(rptsrc==7))%>%
+                rpt.foster=sum(rptsrc==7),
+                rpt.unk=sum(is.na(rptsrc))+sum(rptsrc==88, na.rm=TRUE)+sum(RptSrc==13, na.rm=TRUE)+
+                  sum(RptSrc==99, na.rm=TRUE))%>%
       mutate(year=year[i])
     
   }

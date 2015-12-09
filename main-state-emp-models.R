@@ -6,7 +6,6 @@ library(nlme)
 library(lme4)
 library(texreg)
 library(ggplot2)
-library(Amelia)
 set.seed(1)
 
 setwd("H:/")
@@ -45,41 +44,41 @@ s.dat<-s.dat%>%
 
 s.dat$rpts.pc<-s.dat$tot.rpt/s.dat$child
 s.dat$year.c<-s.dat$year-2002
-# 
-# rpts.plot<-ggplot(data=s.dat,
-#        aes(x=year, y=rpts.pc))+
-#   geom_point()+
-#   facet_wrap(~stname)+
-#   theme_bw()+
-#   ggtitle("Total maltreatment reports per capita")+
-#   scale_x_continuous(breaks=c(2004,2007,2010))
-# ggsave("H:/fc-surv-pres/rpts-plot.pdf", rpts.plot)
-# 
-# source.plot<-ggplot(data=s.dat,
-#        aes(x=year))+
-#   geom_point(aes(y=(rpt.cj/child)), colour="red", size=2, alpha=0.9)+
-#   geom_point(aes(y=(rpt.socserv/child)), colour="grey1", size=2, alpha=0.9)+
-#     facet_wrap(~stname)+
-#   theme_bw()+
-#   ggtitle("Reporting rates per capita, police in red, social services in grey")+
-#   scale_x_continuous(breaks=c(2004,2007,2010))
-# ggsave("H:/fc-surv-pres/source-plot.pdf", source.plot)
-# 
-# emp.plot<-ggplot(data=s.dat,
-#                  aes(x=year))+
-#   geom_point(aes(y=(police.pc)), colour="red", size=2, alpha=0.9)+
-#   geom_point(aes(y=(welfare.pc)), colour="grey1", size=2, alpha=0.9)+
-#   facet_wrap(~stname)+
-#   theme_bw()+
-#   ggtitle("Staffing rates per capita, police in red, social services in grey")+
-#   scale_x_continuous(breaks=c(2004,2007,2010))
-# ggsave("H:/fc-surv-pres/emp-plot.pdf", emp.plot)
-# 
-# 
-# ### NEED TO IMPUTE MISSING
-# pdf("H:/fc-surv-pres/missmap.pdf")
-# missmap(s.dat)
-# dev.off()
+
+rpts.plot<-ggplot(data=s.dat,
+       aes(x=year, y=rpts.pc))+
+  geom_point()+
+  facet_wrap(~stname)+
+  theme_bw()+
+  ggtitle("Total maltreatment reports per capita")+
+  scale_x_continuous(breaks=c(2004,2007,2010))
+ggsave("H:/fc-surv-pres/rpts-plot.pdf", rpts.plot)
+
+source.plot<-ggplot(data=s.dat,
+       aes(x=year))+
+  geom_point(aes(y=(rpt.cj/child)), colour="red", size=2, alpha=0.9)+
+  geom_point(aes(y=(rpt.socserv/child)), colour="grey1", size=2, alpha=0.9)+
+    facet_wrap(~stname)+
+  theme_bw()+
+  ggtitle("Reporting rates per capita, police in red, social services in grey")+
+  scale_x_continuous(breaks=c(2004,2007,2010))
+ggsave("H:/fc-surv-pres/source-plot.pdf", source.plot)
+
+emp.plot<-ggplot(data=s.dat,
+                 aes(x=year))+
+  geom_point(aes(y=(police.pc)), colour="red", size=2, alpha=0.9)+
+  geom_point(aes(y=(welfare.pc)), colour="grey1", size=2, alpha=0.9)+
+  facet_wrap(~stname)+
+  theme_bw()+
+  ggtitle("Staffing rates per capita, police in red, social services in grey")+
+  scale_x_continuous(breaks=c(2004,2007,2010))
+ggsave("H:/fc-surv-pres/emp-plot.pdf", emp.plot)
+
+
+### NEED TO IMPUTE MISSING
+pdf("H:/fc-surv-pres/missmap.pdf")
+missmap(s.dat)
+dev.off()
 
 m<-round((sum(is.na(s.dat$rpt.foster))/nrow(s.dat))*100)
 ### Constrain to [0,Inf]
@@ -88,68 +87,73 @@ bounds<-cbind(1:ncol(s.dat), rep(0, ncol(s.dat)), rep(Inf, ncol(s.dat)))
 rpt.imp<-amelia(s.dat, ts="year", cs="state", 
                 idvars=c("stname", "statename", "year.c"),
                 m=m, polytime=1, empri=0.01*nrow(s.dat), bounds=bounds)
-
 plot(rpt.imp)
 par(mfrow=c(1,1))
 ### UNCONDITIONAL GROWTH
-### RE-WRITING FOR TOTAL REPORTS 
-### AND FOR TOTAL VICTIMS
-### PERHAPS LATER DO NO VICTIM REPORTS AS A SURPLUS EFFECT?
-m0<-lme(fixed=scale(I(tot.rpt/child))~year.c,
+m0.pol<-lme(fixed=scale(I(rpt.cj/child))~year.c,
         random=~year.c|state,
 	data=s.dat, na.action="na.omit")
 
+m0.socserv<-lme(fixed=scale(I(rpt.socserv/child))~year.c,
+                random=~year.c|state,
+                data=s.dat, na.action="na.omit")
 ### POLICE REPORTS - RATES OR COUNTS? 
-m1<-lme(fixed=scale(I(victims/child))~scale(police.pc)+
-          scale(welfare.pc)+year.c,
+m.pol<-lme(fixed=scale(I(rpt.cj/child))~scale(police.pc)+scale(I(crime/pop))+scale(I(incartot/pop))+
+             scale(pctblk)+
+             scale(chpovrt)+scale(unemprt)+
+             scale(childnot2par)+year.c,
             random=~year.c|state,
             data=s.dat, na.action="na.omit")
 
-m2<-lme(fixed=scale(I(victims/child))~scale(police.pc)+scale(I(crime/pop))+scale(I(incartot/pop))+
-          scale(welfare.pc)+scale(I(AFDCRec/childpov))+
-          scale(I(WIC.par/childpov))+
-          scale(pctblk)+
-          scale(chpovrt)+scale(unemprt)+
-          scale(childnot2par)+year.c,
-        random=~year.c|state,
-        data=s.dat, na.action="na.omit")
-
-m2.t<-lme(fixed=scale(I(victims/child))~scale(police.pc)+
-          scale(welfare.pc)+
-          scale(chpovrt)+
-          scale(childnot2par)+year.c,
-        random=~year.c|state,
-        data=s.dat, na.action="na.omit")
+m.socserv<-lme(fixed=scale(I(rpt.socserv/child))~scale(welfare.pc)+scale(I(AFDCRec/childpov))+
+                 scale(I(WIC.par/childpov))+
+                 scale(pctblk)+
+                 scale(chpovrt)+scale(unemprt)+
+                 scale(childnot2par)+year.c,
+               random=~year.c|state,
+               data=s.dat, na.action="na.omit")
 
 ### Create null matrices for FE, SE output
-m0.g <- matrix(0, nrow=m, ncol=length(fixef(m0)))
-m0.se <- matrix(0, nrow=m, ncol=length(fixef(m0)))
-colnames(m0.g) <- colnames(m0p.se) <- names(fixef(m0))
+m0p.g <- matrix(0, nrow=m, ncol=length(fixef(m0.pol)))
+m0p.se <- matrix(0, nrow=m, ncol=length(fixef(m0.pol)))
+colnames(m0p.g) <- colnames(m0p.se) <- names(fixef(m0.pol))
 
+m0s.g <- matrix(0, nrow=m, ncol=length(fixef(m0.socserv)))
+m0s.se <- matrix(0, nrow=m, ncol=length(fixef(m0.socserv)))
+colnames(m0p.g) <- colnames(m0p.se) <- names(fixef(m0.socserv))
 
-m1.g <- matrix(0, nrow=m, ncol=length(fixef(m1)))
-m1.se <- matrix(0, nrow=m, ncol=length(fixef(m1)))
-colnames(m1.g) <- colnames(m1.se) <- names(fixef(m1))
+m.pol.g <- matrix(0, nrow=m, ncol=length(fixef(m.pol)))
+m.pol.se <- matrix(0, nrow=m, ncol=length(fixef(m.pol)))
+colnames(m.pol.g) <- colnames(m.pol.se) <- names(fixef(m.pol))
 
-
+m.socserv.g <- matrix(0, nrow=m, ncol=length(fixef(m.socserv)))
+m.socserv.se <- matrix(0, nrow=m, ncol=length(fixef(m.socserv)))
+colnames(m.socserv.g) <- colnames(m.socserv.se) <- names(fixef(m.socserv))
 
 
 for(i in (1:m)){
   dat<-rpt.imp$imputations[[i]]
   
-  m0.i<-lme(fixed=scale(I(rpt.cj/child))~year.c,
+  m0p.i<-lme(fixed=scale(I(rpt.cj/child))~year.c,
               random=~year.c|state,
               data=dat, control=lmeControl(maxIter=500,
                                            msMaxIter=500,
                                            msMaxEval=500,
                                            sing.tol=1e-20))
-
   
-  m0.g[i,]<-fixef(m0.i)
-  m0.se[i,]<-summary(m0.i)$tTable[,"Std.Error"]
-
+  m0s.i<-lme(fixed=scale(I(rpt.socserv/child))~year.c,
+                  random=~year.c|state,
+                  data=dat, control=lmeControl(maxIter=500,
+                                               msMaxIter=500,
+                                               msMaxEval=500,
+                                               sing.tol=1e-20))
+  
+  m0p.g[i,]<-fixef(m0p.i)
+  m0p.se[i,]<-summary(m0p.i)$tTable[,"Std.Error"]
+  m0s.g[i,]<-fixef(m0s.i)
+  m0s.se[i,]<-summary(m0s.i)$tTable[,"Std.Error"]
  
-  m1.i<-lme(fixed=scale(I(rpt.cj/child))~scale(police.pc)+scale(I(crime/pop))+scale(I(incartot/pop))+
+  m.pol.i<-lme(fixed=scale(I(rpt.cj/child))~scale(police.pc)+scale(I(crime/pop))+scale(I(incartot/pop))+
                scale(pctblk)+
                scale(chpovrt)+scale(unemprt)+
                scale(childnot2par)+year.c,
@@ -161,6 +165,20 @@ for(i in (1:m)){
   
   m.pol.g[i,]<-fixef(m.pol.i)
   m.pol.se[i,]<-summary(m.pol.i)$tTable[,"Std.Error"]
+  
+  m.socserv.i<-lme(fixed=scale(I(rpt.socserv/child))~scale(welfare.pc)+scale(I(AFDCRec/childpov))+
+                   scale(I(WIC.par/childpov))+
+                   scale(pctblk)+
+                   scale(chpovrt)+scale(unemprt)+
+                   scale(childnot2par)+year.c,
+                 random=~year.c|state,
+                 data=dat, control=lmeControl(maxIter=500,
+                                                msMaxIter=500,
+                                                msMaxEval=500,
+                                                sing.tol=1e-20))
+  
+  m.socserv.g[i,]<-fixef(m.socserv.i)
+  m.socserv.se[i,]<-summary(m.socserv.i)$tTable[,"Std.Error"]
   
 }
 

@@ -21,16 +21,19 @@ year<-c(2012)
   #, 2011, 2010, 2009, 2008, 2007, 2006, 2005, 2004, 2003, 2002, 2001, 2000)
 
 cnty.out<-list()
-for(i in (1:length(files))){
+#for(i in (1:length(files))){
+  i<-1
   dat<-fread(files[i])
+  names(dat)<-tolower(names(dat))
+  dat$rptsrc<-addNA(factor(dat$rptsrc))
 
 #### New strategy - use tidyr/dplyr to turn vars (rptsrc, others) into factor, spread into columns
 #### Can eyeball data quality by county from there, leave transformation out to analysis script
   cnty.rpt<-dat%>%
-    group_by(RptFIPS)%>%
-    summarise(tot.rpt=n())%>%
-    count(factor(RptSrc))
-}
+    group_by(rptfips)%>%
+    count(rptsrc, rptfips)%>%
+    spread(rptsrc,n)
+
 
 # if(year[i]==2012|year[i]==2011|year[i]==2007|year[i]==2005){
 # dat<-dat%>%mutate(RptSrc=as.character(RptSrc)) 

@@ -10,22 +10,24 @@ set.seed(1)
 setwd("H:/data")
 source("H:/ncands-fc/ncandsread.r")
 
-files<-c("Child2012.csv", "Child2011.csv",	"Child2010.csv",	"Child2009.csv", 	"Child2008.csv","Child2007.csv", 	"Child2006.csv", "Child2005.csv", 	"Child2004.csv","Child2003.csv", 	"Child2002.csv", "Child2001.csv",	"Child2000.csv")
+files<-c("Child2012.csv", "Child2011.csv",	"Child2010.csv",	"Child2009.csv", 	"Child2008.csv","Child2007.csv", 	"Child2006.csv")
 
-year<-c(2012, 2011, 2010, 2009, 2008, 2007, 2006, 2005, 2004, 2003, 2002, 2001, 2000)
+### measurement and matching problems for year < 2006 when variable definition changes - 
+### will need to match on state + rptcnty for 2000-2005 if I want to use those.  
+### have to preserve fips as character to keep leading zeroes, for earlier years, no rptfips variable, 
+### rptcnty as three digit county code (w/0 2 digit state, incl -1)
 
-cnty.out<-list()
+year<-c(2012:2006)
+
+cnty.out<-NULL
 for(i in (1:length(files))){
-  dat<-fread(files[i])
+  dat<-fread(files[i], colClasses="character", na.strings="")
   names(dat)<-tolower(names(dat))
   if("isvictim"%in%names(dat)){
     names(dat)[which(names(dat)=="isvictim")]<-"rptvictim"
   }
   if(!("rptvictim"%in%names(dat))){
-    dat$rptvictim<-with(dat,(rptdisp==1|rptdisp==2|rptdisp==3))
-  }
-  if("rptcnty"%in%names(dat)){
-    names(dat)[which(names(dat)=="rptcnty")]<-"rptfips"
+    dat$rptvictim<-with(dat,(rptdisp=="1"|rptdisp=="2"|rptdisp=="3"))
   }
   dat$rptsrc[which(is.na(dat$rptsrc))]<-"N.A"
   dat$rptsrc<-factor(dat$rptsrc)
@@ -43,19 +45,26 @@ for(i in (1:length(files))){
               group_by(rptfips, staterr)%>%
               summarise(tot.rpt=n(),
                         unique.reports=n_distinct(rptid),
-                        victims=sum(rptvictim==1))%>%
+                        victims=sum(rptvictim=="1"))%>%
                         mutate(non.victim=tot.rpt-victims)%>%
                         mutate(year=year[i]), by="rptfips")
 
   temp<-as.data.frame(temp)
-  cnty.out[[i]]<-temp
+  cnty.out<-bind_rows(cnty.out, temp)
   rm(dat)
 }
 
+write.csv(cnty.out,"cntyrpt06-12.csv", row.names=FALSE)
 
-for(i in 1:length(year)){
-  file<-paste("cnty", year[i], ".csv", sep="")
-  write.csv(cnty.out[[i]], file, row.names=FALSE)
-}
+# dat<-NULL
 
-q(save="no")
+# for(i in 1:length(year)){
+#   file<-paste("cnty", year[i], ".csv", sep="")
+#   write.csv(cnty.out[[i]], file, row.names=FALSE)
+#   dat<-bind_rows(dat, read.csv(file))
+#   
+# }
+
+
+
+#q(save="no")

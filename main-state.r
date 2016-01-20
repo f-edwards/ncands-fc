@@ -44,6 +44,7 @@ s.dat<-s.dat%>%
   filter(stname!="DC")
 
 s.dat$rpts.pc<-s.dat$tot.rpt/s.dat$child
+s.dat$rpts.mand.pct<-(s.dat$tot.rpt-s.dat$rpt.inf)/s.dat$tot.rpt
 s.dat$year.c<-s.dat$year-2002
 
 rpts.plot<-ggplot(data=s.dat,
@@ -55,6 +56,16 @@ rpts.plot<-ggplot(data=s.dat,
   xlab("Year")+
   ylab("Reports per capita")
 ggsave("H:/surveillance-analysis/paper-draft/rpts-plot.pdf", rpts.plot)
+
+rpts.mand.plot<-ggplot(data=s.dat,
+                     aes(x=year, y=rpts.mand.pct))+
+  geom_point()+
+  facet_wrap(~stname, ncol=5)+
+  theme_bw()+
+  scale_x_continuous(breaks=c(2004,2010))+
+  xlab("Year")+
+  ylab("Reports per capita")
+
 
 emp.plot<-ggplot(data=s.dat,
                  aes(x=year))+

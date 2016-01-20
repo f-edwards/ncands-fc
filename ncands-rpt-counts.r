@@ -8,7 +8,6 @@ library(data.table)
 set.seed(1)
 
 setwd("H:/data")
-source("H:/ncands-fc/ncandsread.r")
 
 files<-c("Child2012.csv", "Child2011.csv",	"Child2010.csv",	"Child2009.csv", 	"Child2008.csv","Child2007.csv", 	"Child2006.csv", "Child2005.csv", 	"Child2004.csv","Child2003.csv", 	"Child2002.csv", "Child2001.csv",	"Child2000.csv")
 
@@ -19,6 +18,8 @@ year<-c(2012:2000)
 cnty.out<-NULL
 st.out<-NULL
 
+### getting false zeroes for rptvictim for 2000-2002 in some states, probably due to weird values on rptdisp
+
 for(i in (1:length(year))){
   dat<-fread(files[i], colClasses="character", na.strings="")
   names(dat)<-tolower(names(dat))
@@ -26,7 +27,7 @@ for(i in (1:length(year))){
     names(dat)[which(names(dat)=="isvictim")]<-"rptvictim"
   }
   if(!("rptvictim"%in%names(dat))){
-    dat$rptvictim<-with(dat,(rptdisp=="1"|rptdisp=="2"|rptdisp=="3"))
+    dat$rptvictim<-as.character(as.numeric(with(dat,(rptdisp=="1"|rptdisp=="2"|rptdisp=="3"))))
   }
   dat$rptsrc[which(dat$rptsrc=="0")]<-NA
   dat$rptsrc[which(is.na(dat$rptsrc))]<-"N.A"

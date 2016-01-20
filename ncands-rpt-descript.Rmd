@@ -26,6 +26,7 @@ cnty.mal<-read.csv("H:/data/cntyrpt06-12.csv", stringsAsFactors = FALSE)
 ### Strip out missing and de-identified counties
 cnty.mal<-cnty.mal[-which(cnty.mal$rptfips==0),]
 cnty.mal<-cnty.mal[which(!(substrRight(as.character(cnty.mal$rptfips), 3)%in%(c("999", "000")))),]
+
 ```
 
 This looks at describing trends in NCANDS data at the county and state levels
@@ -60,3 +61,90 @@ with(cnty.mal, hist(victims/tot.rpt))
 
 This is a random sample of 56 counties from the full data (out of 709 reporting in NCANDS b/w 2000 and 2006) looking at the proportion of cases with a confirmed victim for the TS plot, and all the counties for the histogram. 
 
+# Proportion of reports by reporter type
+## States
+```{r echo=FALSE, message=FALSE, cache=TRUE}
+ggplot(data=state.mal,
+       aes(x=year, y=src1/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src2/tot.rpt, color="blue")+
+  geom_line(x=year, y=src3/tot.rpt, color="red")+
+  geom_line(x=year, y=src4/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("socserv:black, med:blue, ment hlth: red, law enf:green")
+
+ggplot(data=state.mal,
+       aes(x=year, y=src5/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src6/tot.rpt, color="blue")+
+  geom_line(x=year, y=src7/tot.rpt, color="red")+
+  geom_line(x=year, y=src8/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("edu:black, day care:blue, foster cr: red, victim:green")
+
+ggplot(data=state.mal,
+       aes(x=year, y=src9/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src10/tot.rpt, color="blue")+
+  geom_line(x=year, y=src11/tot.rpt, color="red")+
+  geom_line(x=year, y=src12/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("parent:black, relative:blue, nghbr: red, perp:green")
+
+ggplot(data=state.mal,
+       aes(x=year, y=src13/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src88/tot.rpt, color="blue")+
+  geom_line(x=year, y=src99/tot.rpt, color="red")+
+  geom_line(x=year, y=srcN.A/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("anon:black, other:blue, unk: red, NA:green")
+
+hist(state.mal$prof.rpt)
+hist(cnty.mal$inf.rpt)
+
+```
+
+
+## Counties
+```{r echo=FALSE, message=FALSE, cache=TRUE}
+ggplot(data=cnty.test,
+       aes(x=year, y=src1/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src2/tot.rpt, color="blue")+
+  geom_line(x=year, y=src3/tot.rpt, color="red")+
+  geom_line(x=year, y=src4/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("socserv:black, med:blue, ment hlth: red, law enf:green")
+
+ggplot(data=cnty.test,
+       aes(x=year, y=src5/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src6/tot.rpt, color="blue")+
+  geom_line(x=year, y=src7/tot.rpt, color="red")+
+  geom_line(x=year, y=src8/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("edu:black, day care:blue, foster cr: red, victim:green")
+
+ggplot(data=cnty.test,
+       aes(x=year, y=src9/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src10/tot.rpt, color="blue")+
+  geom_line(x=year, y=src11/tot.rpt, color="red")+
+  geom_line(x=year, y=src12/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("parent:black, relative:blue, nghbr: red, perp:green")
+
+ggplot(data=cnty.test,
+       aes(x=year, y=src13/tot.rpt))+
+  geom_line()+
+  geom_line(x=year, y=src88/tot.rpt, color="blue")+
+  geom_line(x=year, y=src99/tot.rpt, color="red")+
+  geom_line(x=year, y=srcN.A/tot.rpt, color="green")+
+  facet_wrap(~staterr)+
+  ggtitle("anon:black, other:blue, unk: red, NA:green")
+
+hist(cnty.mal$prof.rpt)
+hist(cnty.mal$inf.rpt)
+
+```

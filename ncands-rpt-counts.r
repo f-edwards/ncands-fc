@@ -39,6 +39,11 @@ st.rpt<-dat%>%
   spread(rptsrc,n)
 st.rpt[is.na(st.rpt)]<-0
 names(st.rpt)[2:ncol(st.rpt)]<-paste("src", names(st.rpt)[2:ncol(st.rpt)], sep="")
+
+st.rpt<-st.rpt%>%
+  mutate(prof.rpt=src1+src2+src3+src4+src5+src6+src7)%>%
+  mutate(inf.rpt=src8+src9+src10+src11+src12)
+
 temp<-left_join(st.rpt,
                 dat%>%
                   group_by(staterr)%>%
@@ -63,6 +68,11 @@ st.out<-bind_rows(st.out, temp)
       spread(rptsrc,n)
     cnty.rpt[is.na(cnty.rpt)]<-0
     names(cnty.rpt)[2:ncol(cnty.rpt)]<-paste("src", names(cnty.rpt)[2:ncol(cnty.rpt)], sep="")
+    
+    cnty.rpt<-cnty.rpt%>%
+      mutate(prof.rpt=src1+src2+src3+src4+src5+src6+src7)%>%
+      mutate(inf.rpt=src8+src9+src10+src11+src12)
+    
     temp<-left_join(cnty.rpt,
               dat%>%
                 group_by(rptfips, staterr)%>%

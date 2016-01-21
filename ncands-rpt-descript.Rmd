@@ -8,6 +8,7 @@ library(lme4)
 library(ggplot2)
 library(Amelia)
 library(arm)
+library(pander)
 set.seed(1)
 
 setwd("H:/")
@@ -103,8 +104,10 @@ ggplot(data=state.mal,
 hist(state.mal$prof.rpt)
 hist(cnty.mal$inf.rpt)
 
-```
+var(state.mal$prof.rpt)
 
+```
+Describe what's going on here
 
 ## Counties
 ```{r echo=FALSE, message=FALSE, cache=TRUE}
@@ -147,4 +150,15 @@ ggplot(data=cnty.test,
 hist(cnty.mal$prof.rpt)
 hist(cnty.mal$inf.rpt)
 
+var(cnty.mal$prof.rpt)
+
 ```
+
+Describe what's going on here
+
+# Moving on to multivariate
+First, check out NCANDS state files for neccessary appends (can't find the damn files...  they were pretty useless anyway, could check the old laptop / writing center pc)
+Bring in CDC county pop 
+Merge state data
+For counties - explore multilevel (year|state)+(1|county)
+

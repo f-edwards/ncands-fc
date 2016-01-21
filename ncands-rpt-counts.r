@@ -85,9 +85,8 @@ st.out<-bind_rows(st.out, temp)
     temp<-as.data.frame(temp)
     cnty.out<-bind_rows(cnty.out, temp)
   }
+rm(dat)
 }
 
 write.csv(cnty.out,"cntyrpt06-12.csv", row.names=FALSE)
 write.csv(st.out, "strpt00-12.csv", row.names=FALSE)
-
-

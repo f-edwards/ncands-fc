@@ -20,6 +20,9 @@ substrRight <- function(x, n){
 ### PULLED COL WIDTH, COL NAMES FROM VariableLayout.xlsx, transposed
 ### READ AND CLEAN DATA
 state.mal<-read.csv("H:/data/strpt00-12.csv", stringsAsFactors = FALSE)
+state.dat<-read.csv("H:/data/statedat.csv", stringsAsFactors=FALSE)
+names(state.dat)[which(names(state.dat)=="stname")]<-"staterr"
+state.mal<-left_join(state.mal, state.dat, by=c("staterr", "year"))
 ### remove XX (death cases) and PR - can add death cases back in with state file (probably should!)
 state.mal<-state.mal[-which(state.mal$staterr%in%c("XX", "PR")),]
 
@@ -31,10 +34,80 @@ cnty.mal<-cnty.mal[which(!(substrRight(as.character(cnty.mal$rptfips), 3)%in%(c(
 ```
 
 This describes trends in focal NCANDS outcomes at the county and state levels.  It explores substantiation of investigations (RptVictim) and the source of maltreatment reports (RptSrc) at the place level.
+# Total cases by place
+
+Looks like no effect of recession on maltreatment reports - that's odd.  
+
+```{r echo=FALSE, message=FALSE, cache=TRUE, warning=FALSE}
+
+ggplot(data=state.mal,
+       aes(x=year, y=tot.rpt/child))+
+  geom_point()+
+  facet_wrap(~staterr)+
+  scale_x_continuous(breaks=c(2004,2010))+
+  ggtitle("Total Reports")
+```
+
+# Substantiated cases by place
+```{r echo=FALSE, message=FALSE, cache=TRUE, warning=FALSE}
+
+ggplot(data=state.mal,
+       aes(x=year, y=victims/child))+
+  geom_point()+
+  facet_wrap(~staterr)+
+  scale_x_continuous(breaks=c(2004,2010))+
+  ggtitle("Substantiated cases")
+
+require(maps)
+
+names(state.mal)[which(names(state.mal)=="statename")]<-"region"
+state.mal$region<-tolower(state.mal$region)
+state.11<-state.mal[state.mal$year==2011,]
+states<-map_data("state")
+choro<-merge(states, state.11, by="region")
+choro <- choro[order(choro$order), ]
+
+MapPlot <- ggplot(choro,
+ aes(x = long, y = lat, group = group, fill =(tot.rpt/child)))
+MapPlot <- MapPlot + geom_polygon(aes(fill = (tot.rpt/child)), colour = "gray20", size = 0.1) 
+
+MapPlot <- MapPlot + coord_map(project="albers", at0 = 45.5, lat1 = 29.5)  
+
+MapPlot <- MapPlot +  theme(panel.grid.minor=element_blank(), panel.grid.major=element_blank(),
+		panel.border = element_blank(), panel.background=element_blank())+
+	scale_y_continuous(name="", breaks=NULL)+
+	scale_x_continuous(name="", breaks=NULL)
+
+MapPlot<- MapPlot + theme(strip.background=element_blank(), 
+	strip.text.x=element_text(size=10),
+	strip.text.y=element_blank())
+
+MapPlot <- MapPlot + xlab(NULL) + ylab(NULL)
+MapPlot
+
+MapPlot <- ggplot(choro,
+ aes(x = long, y = lat, group = group, fill =(victims/child)))
+MapPlot <- MapPlot + geom_polygon(aes(fill = (victims/child)), colour = "gray20", size = 0.1) 
+
+MapPlot <- MapPlot + coord_map(project="albers", at0 = 45.5, lat1 = 29.5)  
+
+MapPlot <- MapPlot +  theme(panel.grid.minor=element_blank(), panel.grid.major=element_blank(),
+		panel.border = element_blank(), panel.background=element_blank())+
+	scale_y_continuous(name="", breaks=NULL)+
+	scale_x_continuous(name="", breaks=NULL)
+
+MapPlot<- MapPlot + theme(strip.background=element_blank(), 
+	strip.text.x=element_text(size=10),
+	strip.text.y=element_blank())
+
+MapPlot <- MapPlot + xlab(NULL) + ylab(NULL)
+MapPlot
+
+```
 
 # Proportions of cases that are substantiated by place
 ## States
-```{r echo=FALSE, message=FALSE, cache=TRUE}
+```{r echo=FALSE, message=FALSE, cache=TRUE, warning=FALSE}
 
 ### plot total - victims (unsubstantiated) by state
 ggplot(data=state.mal,

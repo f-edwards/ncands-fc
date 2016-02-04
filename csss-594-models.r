@@ -99,6 +99,10 @@ m0<-lme(fixed=scale(I(tot.rpt/child))~year.c,
         random=~year.c|state,
 	data=s.dat, na.action="na.omit")
 
+m0.t<-lme(fixed=scale(I(tot.rpt/child))~year.c+
+            scale(chpovrt),
+          random=~year.c|state,
+          data=s.dat, na.action="na.omit")
 ### POLICE REPORTS - RATES OR COUNTS? 
 m1<-lme(fixed=scale(I(tot.rpt/child))~year.c+
           scale(police.pc)+

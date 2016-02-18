@@ -31,6 +31,23 @@ cnty.mal<-read.csv("H:/data/cntyrpt06-12.csv", stringsAsFactors = FALSE)
 cnty.mal<-cnty.mal[-which(cnty.mal$rptfips==0),]
 cnty.mal<-cnty.mal[which(!(substrRight(as.character(cnty.mal$rptfips), 3)%in%(c("999", "000")))),]
 
+pop<-read.table("H:/data/CDC-Wonder-County-Kids.tsv", sep="",
+                stringsAsFactors = FALSE, head=TRUE)
+names(pop)<-c("cname", "FIPS", "year", "year.dup", "child.pop")
+### pull out state abrev from "NAME County, ST format in var
+z<-do.call("rbind",(strsplit(pop$cname, ", ")))
+pop$cname<-z[,1]
+pop$state<-z[,2]
+
+names(cnty.mal)[which(names(cnty.mal)=="staterr")]<-"state"
+names(cnty.mal)[which(names(cnty.mal)=="rptfips")]<-"FIPS"
+cnty.mal<-cnty.mal[-which(cnty.mal$state=="PR"),]
+### MIAMI DADE CHANGED FROM 12025 to 12086
+cnty.mal[which(cnty.mal$FIPS==12025), "FIPS"]<-12086
+
+rpt.cnty<-left_join(cnty.mal, pop, by=c("FIPS", "year", "state"))
+
+
 ```
 
 This describes trends in focal NCANDS outcomes at the county and state levels.  It explores substantiation of investigations (RptVictim) and the source of maltreatment reports (RptSrc) at the place level.
@@ -258,4 +275,112 @@ First, check out NCANDS state files for neccessary appends (can't find the damn 
 Bring in CDC county pop 
 Merge state data
 For counties - explore multilevel (year|state)+(1|county)
+
+```{r echo=FALSE, message=FALSE, cache=TRUE}
+### add overdispersion
+rpt.cnty$obs_n<-(1:nrow(rpt.cnty))
+m.0<-glmer(tot.rpt~I(year-2006)+(I(year-2006)|FIPS)+(I(year-2006)|state)+(1|obs_n), data=rpt.cnty, family=poisson, offset=log(child.pop))
+
+### write function to read in NHGIS pop data
+read.nhgis<-function(x){
+  temp<-read.csv(x)
+  ### Have to pasted together state and county codes
+  ### need county codes to be XXX
+  temp$county<-formatC(temp$COUNTYA, width = 3, format = "d", flag = "0")
+  ### Convert to 01001 SSCCC FIPS FORMAT
+  temp$FIPS<-paste(as.character(temp$STATEA), temp$county, sep="")
+  ### Construct needed vars
+  ### % of family households getting SSI, pub assist, SNAP in past 12 mos
+  temp$fam.assist<-(temp$UTAE003/temp$UTAE001)
+  temp$ch.pov<-with(temp,(UV9E004+UV9E005+UV9E006+UV9E007+UV9E008+UV9E009)+
+                      (UV9E018+UV9E019+UV9E020+UV9E021+UV9E022+UV9E023))
+  ### Wonky stuff going on when applying margin of error - results in negative pop counts... ignoring for now
+  ### i.e. hist((temp$UTAM003+temp$UTAE003)/temp$UTAE003)
+  out<-data.frame("FIPS"=as.numeric(temp$FIPS), "fam.assist"=temp$fam.assist, "ch.pov"=temp$ch.pov)
+  return(out)
+}
+read.nhgis2<-function(x){
+  temp<-read.csv(x)
+  ### Have to pasted together state and county codes
+  ### need county codes to be XXX
+  temp$county<-formatC(temp$COUNTYA, width = 3, format = "d", flag = "0")
+  ### Convert to 01001 SSCCC FIPS FORMAT
+  temp$FIPS<-paste(as.character(temp$STATEA), temp$county, sep="")
+  ### Construct needed vars
+  ### % of family households getting SSI, pub assist, SNAP in past 12 mos
+  temp$c.pop<-temp$UEYE001
+  temp$c.wht.pop<-temp$UEYE003
+  temp$c.blk.pop<-temp$UEYE004+temp$UEYE014
+  temp$c.amind.pop<-temp$UEYE005+temp$UEYE015
+  temp$c.hisp.pop<-temp$UEYE012
+  
+  out<-data.frame("FIPS"=as.numeric(temp$FIPS), "c.pop"=temp$c.pop, "c.wht.pop"=temp$c.wht.pop, "c.blk.pop"=temp$c.blk.pop, "c.amind.pop"=temp$c.amind.pop,
+                  "c.hisp.pop"=temp$c.hisp.pop)
+  return(out)
+}
+cnty.pov1<-read.nhgis("h:/data/nhgis0016_ds202_20135_2013_county.csv")
+cnty.race<-read.nhgis2("h:/data/nhgis0017_ds201_20135_2013_county.csv")
+cnty.pov<-left_join(cnty.pov1, cnty.race, by="FIPS")
+
+## read ed data
+cnty.ed<-read.csv("H:/data/NCES_Report_215.csv", skip=10)
+cnty.ed<-cnty.ed[-(3153:nrow(cnty.ed)),]
+names(cnty.ed)<-c("state", "cname", "FIPS", "tot.schools", "charter.schools",
+                  "state.fips", "tot.students", "free.lunch", "red.lunch",
+                  "free.red.lunch", "ell", "indiv.ed.prog.stud", "tot.staff",
+                  "s.t.ratio", "fte.teachers.scl", "fte.teachers.dist", "instruct.aides",
+                  "instruct.coord", "elem.counsel", "elem.teachers", "k.teachers",
+                  "lea.admin", "lea.admin.support", "libr", "other.support",
+                  "pre.k.teachers", "school.admin", "school.admin.support",
+                  "sec.counsel", "sec.teachers", "student.support.dist", "counselors",
+                  "ungraded.teachers", "other.counselors")
+
+
+### use single year for now - most data in 2011
+cnty.11<-left_join(rpt.cnty[rpt.cnty$year==2011,], cnty.pov, by="FIPS")
+cnty.11$ch.pov.rt<-cnty.11$ch.pov/cnty.11$child.pop
+mc.0<-glmer(tot.rpt~ch.pov.rt+(1|state)+(1|obs_n), data=cnty.11, family=poisson, offset=log(child.pop))
+### cor(fam.assist, ch.pov.rt)>0.9, can't have both in model
+### bring in state covars
+state.11<-state.mal[state.mal$year==2011,]
+cnty.11$staterr<-cnty.11$state
+cnty.dat<-left_join(cnty.11, state.11, by=c("staterr"))
+
+mt1<-tot.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+              (1|staterr)+(1|obs_n.x)
+
+mp1<-prof.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+              (1|staterr)+(1|obs_n.x)
+
+
+mi1<-inf.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+              (1|staterr)+(1|obs_n.x)
+
+mp2<-prof.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+
+            scale(c.wht.pop/c.pop)+
+              (1|staterr)+(1|obs_n.x)
+
+mv1<-victims.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+              (1|staterr)+(1|obs_n.x)
+
+p.1<-glmer(mp1, data=cnty.dat, family=poisson, offset=log(child.pop))
+p.2<-glmer(mp2, data=cnty.dat, family=poisson, offset=log(child.pop))
+i.1<-glmer(mi1, data=cnty.dat, family=poisson, offset=log(child.pop))
+t.1<-glmer(mt1, data=cnty.dat, family=poisson, offset=log(child.pop))
+v.1<-glmer(mv1, data=cnty.dat, family=poisson, offset=log(child.pop))
+
+
+### different outcome, substantiation rate
+sub.1<-lmer(scale(I(victims.x/tot.rpt.x))~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+              (1|staterr), data=cnty.dat)
+
+
+
+
+```
 

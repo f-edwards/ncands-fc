@@ -1,0 +1,15 @@
+base
+readr
+dplyr
+tidyr
+nlme
+Matrix
+lme4
+ggplot2
+Rcpp
+Amelia
+MASS
+arm
+pander
+maps
+mapproj

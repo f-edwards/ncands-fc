@@ -278,8 +278,8 @@ For counties - explore multilevel (year|state)+(1|county)
 
 ```{r echo=FALSE, message=FALSE, cache=TRUE}
 ### add overdispersion
-rpt.cnty$obs_n<-(1:nrow(rpt.cnty))
-m.0<-glmer(tot.rpt~I(year-2006)+(I(year-2006)|FIPS)+(I(year-2006)|state)+(1|obs_n), data=rpt.cnty, family=poisson, offset=log(child.pop))
+# rpt.cnty$obs_n<-(1:nrow(rpt.cnty))
+# m.0<-glmer(tot.rpt~I(year-2006)+(I(year-2006)|FIPS)+(I(year-2006)|state)+(1|obs_n), data=rpt.cnty, family=poisson, offset=log(child.pop))
 
 ### write function to read in NHGIS pop data
 read.nhgis<-function(x){
@@ -320,52 +320,119 @@ read.nhgis2<-function(x){
 }
 cnty.pov1<-read.nhgis("h:/data/nhgis0016_ds202_20135_2013_county.csv")
 cnty.race<-read.nhgis2("h:/data/nhgis0017_ds201_20135_2013_county.csv")
-cnty.pov<-left_join(cnty.pov1, cnty.race, by="FIPS")
+cnty.pov2<-left_join(cnty.pov1, cnty.race, by="FIPS")
 
 ## read ed data
-cnty.ed<-read.csv("H:/data/NCES_Report_215.csv", skip=10)
-cnty.ed<-cnty.ed[-(3153:nrow(cnty.ed)),]
-names(cnty.ed)<-c("state", "cname", "FIPS", "tot.schools", "charter.schools",
+cnty.ed<-read.csv("H:/data/NCES_Report_215.csv", skip=10, stringsAsFactors = FALSE)
+names(cnty.ed)<-c("state", "county.name", "FIPS", "tot.schools", "charter.schools",
                   "state.fips", "tot.students", "free.lunch", "red.lunch",
                   "free.red.lunch", "ell", "indiv.ed.prog.stud", "tot.staff",
                   "s.t.ratio", "fte.teachers.scl", "fte.teachers.dist", "instruct.aides",
                   "instruct.coord", "elem.counsel", "elem.teachers", "k.teachers",
-                  "lea.admin", "lea.admin.support", "libr", "other.support",
+                  "lea.admin", "lea.admin.support", "libr", "lib.support","other.support",
                   "pre.k.teachers", "school.admin", "school.admin.support",
                   "sec.counsel", "sec.teachers", "student.support.dist", "counselors",
                   "ungraded.teachers", "other.counselors")
+cnty.pov<-left_join(cnty.pov2, cnty.ed, by=c("FIPS"))
 
+cnty.emp<-read.fwf("H:/data/12coar2.dat", 
+                   widths = c(2, 1, 3, 11, 3, 10, 12, 10, 12, 10, 10, 10, 12))
+cnty.emp<-cnty.emp[,-c(2,4)]
 
+names(cnty.emp)<-c("s.code", "c.code", "item", "fte", "ftpay", "pte", "ptpay",
+                   "pthrs", "ftee", "tot.emp", "tot.pay")
+### STUPID STATE CODES IN CoG aren't FIPS, gotta use the key file to match, sub FIPS
+emp.key<-read.fwf("H:/data/12coar1.dat",
+                  widths=c(2, 1, 3, 8, 35,29,1,30,2,3,5,4,2,9,2,61,2))
+emp.key<-emp.key[,-c(2,4)]
+names(emp.key)<-c("s.code", "c.code", ".", ".", ".", ".", "fips.st", "fips.c")
+
+emp.key$fips.c<-formatC(emp.key$fips.c, width = 3, format = "d", flag = "0")
+emp.key$FIPS<-paste(emp.key$fips.st, emp.key$fips.c, sep="")
+emp.key<-emp.key[, c("s.code", "c.code", "FIPS")]
+emp.join<-left_join(cnty.emp, emp.key, by=c("s.code", "c.code"))
+emp.pay<-emp.join%>%
+  dplyr::select(FIPS, item, tot.pay)%>%
+  group_by(FIPS)%>%
+  spread(item,tot.pay)
+
+c.pay<-emp.join%>%
+  dplyr::select(FIPS, item, tot.pay)%>%
+  group_by(FIPS)%>%
+  spread(item, tot.pay)%>%
+  dplyr::select(FIPS, all.pay=`0`, teach.pay=`12`, 
+                health.pay=`32`, hosp.pay=`40`, police.pay=`62`, welf.pay=`79`)
+
+c.emp<-emp.join%>%
+  dplyr::select(FIPS, item, tot.emp)%>%
+  group_by(FIPS)%>%
+  spread(item, tot.emp)%>%
+  dplyr::select(FIPS, all.emp=`0`, teach.emp=`12`, 
+                health.emp=`32`, hosp.emp=`40`, police.emp=`62`, welf.emp=`79`)
+
+c.emp.dat<-left_join(c.pay, c.emp, by="FIPS")                   
+c.emp.dat$FIPS<-as.numeric(c.emp.dat$FIPS)
 ### use single year for now - most data in 2011
-cnty.11<-left_join(rpt.cnty[rpt.cnty$year==2011,], cnty.pov, by="FIPS")
+cnty.11<-left_join(rpt.cnty[rpt.cnty$year==2011,], cnty.pov, by=c("FIPS", "state"))
 cnty.11$ch.pov.rt<-cnty.11$ch.pov/cnty.11$child.pop
-mc.0<-glmer(tot.rpt~ch.pov.rt+(1|state)+(1|obs_n), data=cnty.11, family=poisson, offset=log(child.pop))
+# mc.0<-glmer(tot.rpt~ch.pov.rt+(1|state)+(1|obs_n), data=cnty.11, family=poisson, offset=log(child.pop))
 ### cor(fam.assist, ch.pov.rt)>0.9, can't have both in model
 ### bring in state covars
-state.11<-state.mal[state.mal$year==2011,]
+
+
+state.11<-state.dat[state.dat$year==2011,]
 cnty.11$staterr<-cnty.11$state
 cnty.dat<-left_join(cnty.11, state.11, by=c("staterr"))
+cnty.dat<-left_join(cnty.dat, c.emp.dat, by="FIPS")
 
-mt1<-tot.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+cnty.dat$obs_n<-seq(1:nrow(cnty.dat))
+```
+
+```{r}
+
+
+mt1<-tot.rpt~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
              scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
-              (1|staterr)+(1|obs_n.x)
+              (1|staterr)+(1|obs_n)
 
-mp1<-prof.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+mp1<-prof.rpt~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
              scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
-              (1|staterr)+(1|obs_n.x)
+             scale(s.t.ratio)+scale(I(free.red.lunch/tot.students))+scale(I(libr/tot.students))+
+             scale(I(health.emp+hosp.emp)/c.pop)+scale(I(police.emp/c.pop))+scale(I(welf.emp/c.pop))+
+              (1|staterr)+(1|obs_n)
 
-
-mi1<-inf.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+### src5=education personnel
+me0<-src5~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
              scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
-              (1|staterr)+(1|obs_n.x)
+             scale(s.t.ratio)+
+              (1|staterr)+(1|obs_n)
 
-mp2<-prof.rpt.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+
+me1<-src5~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+             scale(s.t.ratio)+scale(I(free.red.lunch/tot.students))+scale(I(libr/tot.students))+
+              (1|staterr)+(1|obs_n)
+
+e1<-s.t.ratio~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+            (1|staterr)
+
+
+mi1<-inf.rpt~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
+             scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
+              (1|staterr)+(1|obs_n)
+
+mp2<-prof.rpt~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+
             scale(c.wht.pop/c.pop)+
-              (1|staterr)+(1|obs_n.x)
+              (1|staterr)+(1|obs_n)
 
-mv1<-victims.x~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+scale(pctblk)+
+mv1<-victims~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+scale(pctblk)+
              scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
-              (1|staterr)+(1|obs_n.x)
+              (1|staterr)+(1|obs_n)
+
+e1<-lmer(e1, data=cnty.dat)
+
+e.0<-glmer(me0, data=cnty.dat, family=poisson, offset=log(child.pop))
+e.1<-glmer(me1, data=cnty.dat, family=poisson, offset=log(child.pop))
 
 p.1<-glmer(mp1, data=cnty.dat, family=poisson, offset=log(child.pop))
 p.2<-glmer(mp2, data=cnty.dat, family=poisson, offset=log(child.pop))
@@ -375,7 +442,7 @@ v.1<-glmer(mv1, data=cnty.dat, family=poisson, offset=log(child.pop))
 
 
 ### different outcome, substantiation rate
-sub.1<-lmer(scale(I(victims.x/tot.rpt.x))~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+confed+
+sub.1<-lmer(scale(I(victims.x/tot.rpt.x))~scale(ch.pov.rt)+scale(inc.crime)+scale(ideo)+
              scale(I(c.blk.pop/c.pop))+scale(I(c.amind.pop/c.pop))+scale(I(c.hisp.pop/c.pop))+
               (1|staterr), data=cnty.dat)
 

@@ -386,6 +386,9 @@ cnty.dat<-left_join(cnty.11, state.11, by=c("staterr"))
 cnty.dat<-left_join(cnty.dat, c.emp.dat, by="FIPS")
 
 cnty.dat$obs_n<-seq(1:nrow(cnty.dat))
+
+## validate quality of census of gov data
+cor(cnty.dat$teach.emp, cnty.dat$tot.staff)
 ```
 
 ```{r}

@@ -1,0 +1,36 @@
+---
+title: "Screening EDA"
+author: "Frank Edwards"
+date: "June 15, 2016"
+output: html_document
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+library(ggplot2)
+library(dplyr)
+setwd("C:/Users/frank/Dropbox/surv-paper")
+d<-read.csv("scn-out.csv", colClasses=c("character", "integer", "integer", "integer"))
+
+d$tot.rpt<-d$scrn.in+d$scrn.out
+
+d$delta.rpt.2014<-NA
+d$delta.in.2014<-NA
+d$delta.out.2014<-NA
+
+for(i in unique(d$state)){
+  z<-which(d$state==i)
+  index<-z[which(d[z, "year"]==2014)]
+  init.tot<-d[index, "tot.rpt"]
+  init.in<-d[index, "scrn.in"]
+  init.out<-d[index, "scrn.out"]
+  d$delta.rpt.2014[z]<-d[z,"tot.rpt"]/init.tot
+  d$delta.in.2014[z]<-d[z,"scrn.in"]/init.in
+  d$delta.out.2014[z]<-d[z,"scrn.out"]/init.out
+  
+}
+
+ggplot(d, aes(y=delta.rpt.2014, x=year))+geom_line()+facet_wrap(~state)
+ggplot(d, aes(y=delta.in.2014, x=year))+geom_line()+facet_wrap(~state)
+ggplot(d, aes(y=log(delta.out.2014), x=year))+geom_line()+facet_wrap(~state)
+
+```

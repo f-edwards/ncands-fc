@@ -109,7 +109,7 @@ choro$q<-returnquant(choro$tot.rpt/choro$child.pop)
 
 CntyPlot <- ggplot(choro,
                        aes(x = long, y = lat, group = group, fill = q)) +
-  geom_polygon(aes(fill = q), colour = "black") +
+  geom_polygon(aes(fill = q), colour = "black", size=0.1) +
   scale_fill_brewer(palette = "Blues", labels=c("Lowest 10%","", "", "", "", "", "", " ", "Highest 10%"),
                     name=" ", na.value="grey50") +
   theme(panel.grid.minor=element_blank(), panel.grid.major=element_blank(),
@@ -119,9 +119,12 @@ CntyPlot <- ggplot(choro,
   theme(strip.background=element_blank(), 
         strip.text.x=element_text(size=10),
         strip.text.y=element_blank())+
+  theme(legend.position="bottom")+
+  theme(legend.key.size= unit(0.3, "cm"))+
+  coord_map(project="albers", at0 = 45.5, lat1 = 29.5)+
   xlab(NULL) + ylab(NULL)
 
-ggsave("AllCountiesTotRpt.pdf", CntyPlot)
+ggsave("AllCountiesTotRpt.pdf", CntyPlot, width=7, height=5)
 
 st.11<-state.mal[state.mal$year==2011,]
 
@@ -148,6 +151,9 @@ StPlot <- ggplot(choro1,
   theme(strip.background=element_blank(), 
         strip.text.x=element_text(size=10),
         strip.text.y=element_blank())+
+  theme(legend.position="bottom")+
+  theme(legend.key.size= unit(0.3, "cm"))+
+  coord_map(project="albers", at0 = 45.5, lat1 = 29.5)+
   xlab(NULL) + ylab(NULL)
 
-ggsave("StTotRpts.pdf", StPlot)
+ggsave("StTotRpts.pdf", StPlot, width=7, height=5)

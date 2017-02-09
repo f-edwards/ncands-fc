@@ -1,15 +1,65 @@
 rm(list=ls())
+
+.libPaths( c( .libPaths(), "U:/R") )
+
 library(readr)
 library(dplyr)
 library(lme4)
 library(texreg)
 library(tidyr)
 library(data.table)
+library(ggplot2)
 set.seed(1)
 
 setwd("R:/Project/NCANDS/ncands-csv/")
 
-files<-c("child-2012.csv")
+dat<-fread("child-2012.csv")
+
+### EDA FOR COUNTY MISSINGNESS
+### create counts by rptsrc, count proportions in each cat
+cdat<-full_join(
+  dat%>%group_by(StaTerr, RptFIPS)%>%
+    count(RptSrc),
+  dat%>%group_by(StaTerr, RptFIPS)%>%
+    summarise(cases=n(), 
+              missing.NA=(sum(RptSrc=="unknown or missing")+sum(RptSrc==""))))
+  
+cdat<-cdat%>%mutate(proportion=n/cases)  
+
+###Check counties where upper (observed + missing) more than 5 percent larger than observed
+pol.check<-cdat%>%mutate(upper=n+missing.NA)%>%
+  filter(RptSrc=="legal, law enforcement, or criminal justice")%>%
+  filter(upper/n<1.05)
+###Number of counties where upper bound is more than 5 percent larger than lower bound
+n.large.error<-length(unique(dat$RptFIPS))-length(unique(pol.check$RptFIPS))
+
+### Drop counties with more than 5 percent of cases missing
+mdat<-cdat%>%filter(missing.NA/cases<0.05)
+n.large.error2<-length(unique(dat$RptFIPS))-length(unique(mdat$RptFIPS))
+
+
+
+
+## state proportion cop report plot
+
+sdat<-dat%>%group_by(StaTerr)%>%summarise(pol=sum(RptSrc=="legal, law enforcement, or criminal justice"), n=n())
+state<-read.csv("R:/Project/NCANDS/ncands-fc/statedat.csv")
+state<-state%>%filter(year==2011)%>%select(state, childpov, child)
+fips<-read.csv("R:/Project/NCANDS/ncands-fc/fips-key.csv")
+state<-left_join(state, fips, by=c("state"))
+s.plot<-left_join(sdat, state, by="StaTerr")
+s.plot$pol.pc<-s.plot$pol/s.plot$child
+s.plot$pol.cp<-s.plot$pol/s.plot$childpov
+s.plot$pol.prop<-s.plot$pol/s.plot$n
+s.plot<-s.plot%>%filter(!(StaTerr%in%c("PR", "PA", "MD", "DC", "XX")))
+s.plot<-s.plot%>%mutate(StaTerr=factor(StaTerr),StaTerr=factor(StaTerr, levels=rev(levels(StaTerr))))
+
+s.bar<-ggplot(s.plot, aes(x=(StaTerr),
+                          y=pol.pc))+
+  geom_bar(stat="identity")+coord_flip()+
+  xlab("State")+ylab("Police reports of maltreatment per capita")
+
+ggsave(s.bar, file="R:/Project/NCANDS/ncands-fc/state-police-bar.pdf", width=5, height=7)
 
 
 

@@ -14,9 +14,7 @@ set.seed(1)
 
 setwd("R:/Project/NCANDS/ncands-csv/Census-SAIPE")
 
-cdat<-read.csv("ncands-rpt-county-07-12.csv")
 
-pol.dat<-cdat%>%filter(RptSrc==4)
 
 readSAIPE<-function(x){
   starts<-c(1, 4, 8, 17, 26, 35, 40,
@@ -40,11 +38,12 @@ readSAIPE<-function(x){
            "median.hh.income", "median.hh.income.lower", "median.hh.income.upper",
            "stname", "state", "tag")
   return(read_fwf(x, fwf_positions(starts, ends, col_names=names),
-                  col_types=classes))
+                  col_types=classes, na="."))
 }
 
 files<-c("est15ALL.txt", "est14ALL.txt",
          "est13ALL.txt", "est12ALL.txt",
+         "est11ALL.txt",
          "est10ALL.txt", "est09ALL.txt",
          "est08ALL.txt", "est07ALL.txt",
          "est06ALL.txt", "est05ALL.txt", 

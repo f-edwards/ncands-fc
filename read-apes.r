@@ -8,7 +8,7 @@ library(nlme)
 library(lme4)
 library(ggplot2)
 
-path<-"H:/data/apes/"
+path<-"R:/Project/NCANDS/ncands-csv/apes/"
 years<-c("2012", "2011", "2010", "2009", "2008", "2007")
 set.seed(1)
 
@@ -55,7 +55,7 @@ for(i in 1:length(folders)){
     }
   }
 }
-setwd("H:/")
+setwd("R:/Project/NCANDS/ncands-csv/")
 
 names(dat)<-c("state", "gov.type", "county",
               "govt-name", "funct", "ft.emp",

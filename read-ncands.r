@@ -15,8 +15,6 @@ set.seed(1)
 
 setwd("R:/Project/NCANDS/ncands-csv/")
 ncands.county<-function(dat){
-  dat<-dat%>%filter(!(duplicated(RptID)))
-  
   dat$race<-with(dat, ifelse(ChRacBl==1, "black",
                              ifelse(ChRacAI==1, "amind",
                                     ifelse(ChRacNH==1, "hawpi",
@@ -34,7 +32,7 @@ ncands.county<-function(dat){
               missing.NA=(sum(RptSrc==99, na.rm=TRUE)+sum(is.na(RptSrc))))
   cdat<-full_join(full_join(total, race), cases)    
   
-  cdat<-cdat%>%mutate(proportion=n/cases)  
+  cdat<-cdat%>%mutate(proportion=missing.NA/cases)  
   
   cdat<-cdat%>%mutate(upper=n+missing.NA)
   

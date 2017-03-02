@@ -4,12 +4,7 @@ rm(list=ls())
 
 library(readr)
 library(dplyr)
-library(lme4)
-library(texreg)
 library(tidyr)
-library(data.table)
-library(ggplot2)
-library(foreign)
 set.seed(1)
 
 setwd("R:/Project/NCANDS/ncands-csv/Census-SAIPE")
@@ -57,5 +52,38 @@ for(i in 1:length(files)){
 }
 
 out$year<-as.numeric(paste("20", substr(out$tag, 4,5), sep=""))
+
+### calculate standard errors from MOE - MOE - upper/lower = PE +/- 1.645*SE
+make.se<-function(pe, upper, lower){
+  temp<-as.data.frame(cbind(pe, upper, lower))
+  temp$se<-NULL
+  for(i in 1:nrow(temp)){
+    temp$se[i]<-max(temp$pe[i]-temp$lower[i], temp$upper[i]-temp$pe[i])/1.645
+  }
+  return(temp$se)
+}
+
+out$pov.se<-make.se(out$pov, out$pov.upper, out$pov.lower)
+out$child.pov.se<-make.se(out$child.pov, out$child.pov.upper, out$child.pov.lower)
+out$child.pov.pct.se<-make.se(out$child.pov.pct, out$child.pov.pct.upper, out$child.pov.pct.lower)
+out$relate.chpov.se<-make.se(out$relate.chpov, out$relate.chpov.upper, out$relate.chpov.lower)
+out$relate.chpov.pct.se<-make.se(out$relate.chpov.pct, out$relate.chpov.pct.upper, out$relate.chpov.pct.lower)
+out$relate.chpov.pct.se<-make.se(out$relate.chpov.pct, out$relate.chpov.pct.upper, out$relate.chpov.pct.lower)
+out$median.hh.income.se<-make.se(out$median.hh.income, out$median.hh.income.upper, out$median.hh.income.lower)
+
+out$fips.st<-ifelse(nchar(as.character(out$fips.st))<2, 
+                    paste("0", as.character(out$fips.st), sep=""), as.character(out$fips.st))
+out$fips.cnty<-ifelse(nchar(as.character(out$fips.cnty))==1,
+                      paste("00", as.character(out$fips.cnty), sep=""),
+                      ifelse(nchar(as.character(out$fips.cnty))==2,
+                             paste("0", as.character(out$fips.cnty), sep=""),
+                             as.character(out$fips.cnty)))
+out$FIPS<-paste(out$fips.st, out$fips.cnty, sep="")
+
+out<-out%>%dplyr::select(-pov.upper, -pov.lower, -pov.pct.lower, -pov.pct.upper,
+                         -child.pov.upper, -child.pov.lower, -child.pov.pct.lower, 
+                         -child.pov.pct.upper, -relate.chpov.lower, -relate.chpov.upper, 
+                         -relate.chpov.pct.upper, -relate.chpov.pct.lower, -median.hh.income.lower, -median.hh.income.upper,
+                         -fips.st, -fips.cnty, -tag, -stname)
 
 write.csv(out, file="R:/Project/NCANDS/ncands-csv/saipe.csv", row.names=FALSE)

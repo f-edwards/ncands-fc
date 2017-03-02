@@ -119,7 +119,7 @@ drug.codes<-c("18")
 qol.codes<-c("140","190", "220", "230", "240", "250", "270", "280")
 
 viol<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%filter(OFFENSE%in%viol.codes)%>%
-  summarise(viol.tot = sum(tot.arrest),
+  summarise(#viol.tot = sum(tot.arrest),
             viol.wht = sum(wht.arrest),
             viol.blk = sum(blk.arrest),
             viol.ai = sum(ai.arrest),
@@ -127,7 +127,7 @@ viol<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%filter(OFFENSE%in%viol.codes)%
             viol.lat = sum(lat.arrest))
 
 drug<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%filter(OFFENSE%in%drug.codes)%>%
-  summarise(drug.tot = sum(tot.arrest),
+  summarise(#drug.tot = sum(tot.arrest),
             drug.wht = sum(wht.arrest),
             drug.blk = sum(blk.arrest),
             drug.ai = sum(ai.arrest),
@@ -135,7 +135,7 @@ drug<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%filter(OFFENSE%in%drug.codes)%
             drug.lat = sum(lat.arrest))
 
 qol<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%filter(OFFENSE%in%qol.codes)%>%
-  summarise(qol.tot = sum(tot.arrest),
+  summarise(#qol.tot = sum(tot.arrest),
             qol.wht = sum(wht.arrest),
             qol.blk = sum(blk.arrest),
             qol.ai = sum(ai.arrest),
@@ -143,7 +143,7 @@ qol<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%filter(OFFENSE%in%qol.codes)%>%
             qol.lat = sum(lat.arrest))
 
 tot<-ucr.county.offense%>%group_by(FIPS, YEAR)%>%
-  summarise(all.tot = sum(tot.arrest),
+  summarise(#all.tot = sum(tot.arrest),
             all.wht = sum(wht.arrest, na.rm=TRUE),
             all.blk = sum(blk.arrest, na.rm=TRUE),
             all.ai = sum(ai.arrest, na.rm=TRUE),
@@ -234,10 +234,10 @@ c.ucr$FIPS_CTY<-ifelse(nchar(as.character(as.numeric(c.ucr$FIPS_CTY)))==2, paste
 
 c.ucr$FIPS<-paste(c.ucr$FIPS_ST, c.ucr$FIPS_CTY, sep="")
 c.ucr<-c.ucr%>%dplyr::select(FIPS, YEAR, viol.tot, prop.tot, drug.tot, all.tot, qol.tot)
-ucr.county.out<-left_join(c.ucr, leoka.county)
+ucr.county.out<-left_join(left_join(c.ucr, leoka.county), ucr.out)
+
 setwd("R:/Project/NCANDS/ncands-csv/")
 write.csv(ucr.county.out, file="ucr-county-offense.csv", row.names=FALSE)
-
 
 ### NYC IS STUPID.  NEED TO DO EDA ON QUALITY ACROSS COUNTIES.... PROBABLY CHECK ALL OF THEM. 36061 2013 and 2014 are too low
 ### WHAT IS ALGORITHM FOR CHECKING QUALITY?

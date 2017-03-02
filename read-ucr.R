@@ -1,6 +1,6 @@
 rm(list=ls())
 
-.libPaths( c( .libPaths(), "U:/R") )
+#.libPaths( c( .libPaths(), "U:/R") )
 
 library(readr)
 library(dplyr)
@@ -13,7 +13,8 @@ library(foreign)
 library(haven)
 set.seed(1)
 
-setwd("R:/Project/NCANDS/ncands-csv/")
+#setwd("R:/Project/NCANDS/ncands-csv/")
+setwd("D:/Sync/ucr/")
 
 ###UCR READ
 ### load 2012 UCR, loads object da35018.001
@@ -79,14 +80,18 @@ ucr.fips$total.age<-apply(ucr.fips[,age.index[1]:age.index[2]], 1, sum)
 # test<-ucr.fips%>%filter(FIPS=="04013")
 # View(test[,c(17, 22:66, 124)])
 
+### rework into long format
+ucr.fips<-ucr.fips%>%rename(AW=wht, AB=blk, AI=ai, AA=aa, AH=lat)
+
 ucr.county.offense<-ucr.fips%>%group_by(FIPS, COUNTYNAME, OFFENSE, YEAR)%>%
   summarise(tot.arrest=sum(total.age), 
-            wht.arrest=(sum(JW)+sum(AW)),
-            blk.arrest=(sum(JB)+sum(AB)),
-            ai.arrest=(sum(JI)+sum(AI)),
-            aa.arrest=sum(JA)+sum(AA),
-            lat.arrest=sum(JH)+sum(AH))
+            wht.arrest=sum(wht),
+            blk.arrest=sum(blk),
+            ai.arrest=sum(ai),
+            aa.arrest=sum(aa),
+            lat.arrest=sum(lat))
 
+test<-ucr.county.offense%>%gather(key=c(FIPS, YEAR), arrest, tot.arrest:lat.arrest)
 # names(ucr.county.offense)[which(names(ucr.county.offense)=="OFFENSE")]<-"code"
 
 # ucr.county.tot<-ucr.county.offense%>%group_by(FIPS, COUNTYNAME, YEAR)%>%

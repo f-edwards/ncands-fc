@@ -142,6 +142,22 @@ nhgis.out<-nhgis.out%>%dplyr::select(-YEAR, -STATEA, -COUNTYA)
 ###DIAGNOSTICS ON ratio of PE/SE
 plot(jitter(log(nhgis.out$ai.chpov_pe)), jitter(nhgis.out$ai.chpov_pe/nhgis.out$ai.chpov_se), pch=".")
 ### Few with PE/SE<2
+nhgis.pe<-nhgis.out%>%select(FIPS, year, blk.chpov_pe, ai.chpov_pe, aa.chpov_pe, wht.chpov_pe)
+nhgis.pe.long<-gather(nhgis.pe, race, chpov_pe, -c(FIPS, year))
+nhgis.pe.long$race<-ifelse(nhgis.pe.long$race=="blk.chpov_pe", "blk",
+                        ifelse(nhgis.pe.long$race=="ai.chpov_pe", "ai",
+                               ifelse(nhgis.pe.long$race=="aa.chpov_pe", "aa",
+                                      ifelse(nhgis.pe.long$race=="wht.chpov_pe", "wht",
+                                             "other"))))
+nhgis.se<-nhgis.out%>%select(FIPS, year, blk.chpov_se, ai.chpov_se, aa.chpov_se, wht.chpov_se)
+nhgis.se.long<-gather(nhgis.se, race, chpov_se, -c(FIPS, year))
+nhgis.se.long$race<-ifelse(nhgis.se.long$race=="blk.chpov_se", "blk",
+                           ifelse(nhgis.se.long$race=="ai.chpov_se", "ai",
+                                  ifelse(nhgis.se.long$race=="aa.chpov_se", "aa",
+                                         ifelse(nhgis.se.long$race=="wht.chpov_se", "wht",
+                                                "other"))))
+
+nhgis.long<-full_join(nhgis.pe.long, nhgis.se.long)
 
 setwd("R:/Project/NCANDS/ncands-csv/")
-write.csv(nhgis.out, "nhgis-chpov.csv", row.names=FALSE)
+write.csv(nhgis.long, "nhgis-chpov.csv", row.names=FALSE)

@@ -45,6 +45,16 @@ Do I want to follow through with a formal specification for surveillance?
 
 #Crime, criminal justice, and the family
 
+Contact with the criminal justice system has a wide range of consequences for families. LIST THEM.
+
+Mass incarceration, in particular, has become a powerful engine of family disruption for poor families of color. LIST CONSEQUENCES
+
+Low-level forms of criminal justice contact also have consequences. LIST THEM
+
+But police are street-level agents for the CWS. Patterns of police-civilian contact affect the distribution of family surveillance. 
+
+Of course, police contact is confounded with crime and likely confounded with child maltreatment. Crime, esp violence, v. bad for kids. LIST IMPACTS OF CRIME AND VIOLENCE ON KIDS AND FAMILIES
+
 #Analytic strategy
 
 This paper addresses a series of empirical questions directed at clarifying whether child welfare system involvement is a spillover consequence of police contact using a variety of multilevel regression models. After controlling for variation in child well-being measured through exposure to poverty, infant mortality, family complexity, and other variables known to indicate or be closely correlated with child abuse and neglect:

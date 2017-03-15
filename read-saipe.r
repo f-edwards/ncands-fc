@@ -1,4 +1,5 @@
 rm(list=ls())
+gc()
 
 .libPaths( c( .libPaths(), "U:/R") )
 
@@ -84,6 +85,6 @@ out<-out%>%dplyr::select(-pov.upper, -pov.lower, -pov.pct.lower, -pov.pct.upper,
                          -child.pov.upper, -child.pov.lower, -child.pov.pct.lower, 
                          -child.pov.pct.upper, -relate.chpov.lower, -relate.chpov.upper, 
                          -relate.chpov.pct.upper, -relate.chpov.pct.lower, -median.hh.income.lower, -median.hh.income.upper,
-                         -fips.st, -fips.cnty, -tag, -stname)
+                         -fips.st, -fips.cnty, -tag, stname)
 
 write.csv(out, file="R:/Project/NCANDS/ncands-csv/saipe.csv", row.names=FALSE)

@@ -37,48 +37,25 @@ names(seer)<-c("year", "state", "state.fips",
 
 seer$FIPS<-paste(seer$state.fips, seer$cnty.fips, sep="")
 
-tot.pop<-seer%>%group_by(FIPS, year)%>%
-  summarise(tot.pop=sum(pop),
-            child.pop=sum(pop[age<18]),
-            adult.pop=sum(pop[age>17]),
-            wht.pop=sum(pop[race==1]),
-            wht.child.pop=sum(pop[(race==1)&(age<18)]),
-            wht.adult.pop=sum(pop[(race==1)&(age>17)]),
-            blk.pop=sum(pop[race==2]),
-            blk.child.pop=sum(pop[(race==2)&(age<18)]),
-            blk.adult.pop=sum(pop[(race==2)&(age>17)]),
-            ai.pop=sum(pop[race==3]),
-            ai.child.pop=sum(pop[(race==3)&(age<18)]),
-            ai.adult.pop=sum(pop[(race==3)&(age>17)]),
-            aa.pop=sum(pop[race==4]),
-            aa.child.pop=sum(pop[(race==4)&(age<18)]),
-            aa.adult.pop=sum(pop[(race==4)&(age>17)]),
-            lat.pop=sum(pop[latino==1]),
-            lat.child.pop=sum(pop[(latino==1)&(age<18)]),
-            lat.adult.pop=sum(pop[(latino==1)&(age>17)])
-            )
+seer<-seer%>%mutate(child=age<18, adult=age>17)
+seer$race<-ifelse(seer$race==2, "blk",
+                  ifelse(seer$race==3, "ai",
+                  ifelse(seer$latino==1, "lat",
+                  ifelse(seer$race==1, "wht",
+                  ifelse(seer$race==4, "aa", seer$race)))))
+seer<-seer%>%dplyr::select(-c(state, state.fips, cnty.fips, registry, latino, age))
 
-write.csv(tot.pop, file="seer-pop.csv", row.names=FALSE)
 
-state.pop<-seer%>%group_by(state.fips, year)%>%
-  summarise(tot.pop=sum(pop),
-            child.pop=sum(pop[age<18]),
-            adult.pop=sum(pop[age>17]),
-            wht.pop=sum(pop[race==1]),
-            wht.child.pop=sum(pop[(race==1)&(age<18)]),
-            wht.adult.pop=sum(pop[(race==1)&(age>17)]),
-            blk.pop=sum(pop[race==2]),
-            blk.child.pop=sum(pop[(race==2)&(age<18)]),
-            blk.adult.pop=sum(pop[(race==2)&(age>17)]),
-            ai.pop=sum(pop[race==3]),
-            ai.child.pop=sum(pop[(race==3)&(age<18)]),
-            ai.adult.pop=sum(pop[(race==3)&(age>17)]),
-            aa.pop=sum(pop[race==4]),
-            aa.child.pop=sum(pop[(race==4)&(age<18)]),
-            aa.adult.pop=sum(pop[(race==4)&(age>17)]),
-            lat.pop=sum(pop[latino==1]),
-            lat.child.pop=sum(pop[(latino==1)&(age<18)]),
-            lat.adult.pop=sum(pop[(latino==1)&(age>17)])
-  )
+seer.tot<-seer%>%group_by(year, FIPS, child)%>%summarise(pop=sum(pop))%>%mutate(race="all", sex=0)
+seer.race<-seer%>%group_by(year, FIPS, child, race)%>%summarise(pop=sum(pop))%>%mutate(sex=0)
+seer.gender<-seer%>%group_by(year, FIPS, child, sex)%>%summarise(pop=sum(pop))%>%
+  mutate(race="all")
+seer.out<-full_join(full_join(seer.tot, seer.race), seer.gender)
+seer.child<-seer.out%>%
+  mutate(child.pop=child*pop)%>%filter(child==TRUE)%>%dplyr::select(-c(pop, child))%>%
+  filter(sex==0)%>%select(-sex)
+seer.tot<-seer.out%>%filter(child==FALSE)%>%group_by(year, FIPS,race, sex)%>%summarise(adult.pop=sum(pop))
 
-write.csv(state.pop, file="seer-pop-state.csv", row.names=FALSE)
+seer.all<-left_join(seer.tot, seer.child)
+
+write.csv(seer.all, file="seer-pop.csv", row.names=FALSE)

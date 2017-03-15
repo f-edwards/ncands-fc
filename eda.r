@@ -61,10 +61,34 @@ plot(dat$police.pc, dat$arrest.all.tot.pc,
 dat$fullname<-paste(dat$county, dat$state, dat$tot.pop)
 library(ggplot2)
 
+
+### EDA ON UCR FOR COUNTY TYPES
+eda<-dat
+eda$name<-paste(eda$county, eda$state)
+eda<-eda%>%filter((year>2003)&(year<2012))
+small.pop<-eda%>%filter(race=="all")%>%filter(tot.pop<100000)
+big.pop<-eda%>%filter(race=="all")%>%filter(tot.pop>100000)
+
+big.RptPCTS<-ggplot(big.pop, aes(x=year, y=cases/child.pop))+geom_point()
+FIPS.samp<-sample(big.pop$FIPS, 50)
+big.Rpt.cnty<-ggplot(big.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=cases/child.pop))+
+  geom_line()+facet_wrap(~name)
+big.Arrest.cnty<-ggplot(big.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=arrest/tot.pop, col=offense))+
+  geom_line()+facet_wrap(~name)
+
+
+small.RptPCTS<-ggplot(small.pop, aes(x=year, y=cases/child.pop))+geom_point()
+FIPS.samp<-sample(small.pop$FIPS, 50)
+small.Rpt.cnty<-ggplot(small.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=cases/child.pop))+
+  geom_line()+facet_wrap(~name)
+small.Arrest.cnty<-ggplot(small.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=arrest/tot.pop, col=offense))+
+  geom_line()+facet_wrap(~name)
+
+
 ### NEED TO LOOP OVER INTO SMALLER FILES
-all.out<-ggplot(dat, aes(x=year, y=pol.rpts.pc))+facet_wrap(~fullname)
-ggsave(all.out, filename = "pol-rpts-allcountes.pdf", height=49, width=49)
-blk.out<-ggplot(dat, aes(x=year, y=pol.blk.pc))+facet_wrap(~fullname)
-ggsave(all.out, filename = "pol-blk-rpts-allcountes.pdf", height=49, width=49)
-ai.out<-ggplot(dat, aes(x=year, y=pol.ai.pc))+facet_wrap(~fullname)
-ggsave(all.out, filename = "pol-ai-rpts-allcountes.pdf", height=49, width=49)
+# all.out<-ggplot(dat, aes(x=year, y=pol.rpts.pc))+facet_wrap(~fullname)
+# ggsave(all.out, filename = "pol-rpts-allcountes.pdf", height=49, width=49)
+# blk.out<-ggplot(dat, aes(x=year, y=pol.blk.pc))+facet_wrap(~fullname)
+# ggsave(all.out, filename = "pol-blk-rpts-allcountes.pdf", height=49, width=49)
+# ai.out<-ggplot(dat, aes(x=year, y=pol.ai.pc))+facet_wrap(~fullname)
+# ggsave(all.out, filename = "pol-ai-rpts-allcountes.pdf", height=49, width=49)

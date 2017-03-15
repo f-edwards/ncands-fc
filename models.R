@@ -4,7 +4,6 @@ gc()
 .libPaths( c( .libPaths(), "U:/R") )
 
 library(Amelia)
-library(MASS)
 library(readr)
 library(dplyr)
 library(lme4)
@@ -16,266 +15,210 @@ library(foreign)
 library(haven)
 library(rstanarm)
 library(shinystan)
+library(MASS)
+library(arm)
+library(parallel)
+cores<-6
+
 set.seed(1)
 setwd("R:/Project/NCANDS/ncands-fc/")
-source("R:/Project/NCANDS/ncands-fc/read-main.r")
-
+dat.in<-as.data.frame(fread("R:/Project/NCANDS/ncands-csv/ncands-fc-merge.csv"))
+dat.in<-read.csv("R:/Project/NCANDS/ncands-csv/ncands-fc-merge.csv")
 ### ID PROBLEM COUNTIES, where upperbound on CJ reports is more than 5 percent larger than reported count
 # error.index<-which(with(dat, (pol.rpts.upper/pol.rpts)>1.05))
 # missing.conservative<-dat[error.index,]
 
 ### Drop counties with more than 10 percent of cases missing
-error.index1<-which(with(dat, prop.missing.rptsrc>0.1))
-missing.liberal<-dat[error.index1,]
+### also lots of missing on race
 
-### for model diagnostics, complete cases only
-dat<-dat[complete.cases(dat),]
-dat<-dat%>%filter(pol.blk.pc<1)
-## to subset for fitting
-#dat1<-dat[sample(dat$n_obs, trunc(nrow(dat)/5)),]
+dat<-dat.in%>%mutate(arrest.rt=arrest/(adult.pop))
+dat$race<-factor(dat$race)
+dat$offense<-factor(dat$offense)
+dat$FIPS<-factor(dat$FIPS)
+dat$n_obs<-1:nrow(dat)
+dat$arrest.rt.s<-as.numeric(scale(dat$arrest.rt))
 
-### drop on conservative missing index, where missing could shift pol.rpts by more than .05
-# dat<-dat[-error.index1,]
 
-# freq<-as.data.frame(table(dat$FIPS))
-# samp<-sample(freq[which(freq[,2]==6),1], 20)
-# 
-# samp.dat<-dat%>%filter(FIPS%in%samp)
-# 
-# ggplot(samp.dat, aes(x=year))+geom_line(aes(y=pol.tot.pc))+facet_wrap(~county)
+error.index1<-dat[which(with(dat, missing.rpt/cases>0.1)), "n_obs"]
+error.index2<-which((dat[dat$race!="all", "missing.race"]/dat[dat$race!="all", "cases"]>0.1)==TRUE)
+error.index2<-dat[dat$race!="all","n_obs"]
 
-# 
-# dat.imp<-amelia(dat, ts="year", cs="FIPS", idvars=c("RptSrc", "fips.st", "fips.cnty", "county"), 
-#                 noms="state",
-#                 polytime=3)
+### for now, drop all cases where missing.race or missing.rpt would create upper bound >1.1 x observed
+
+dat<-dat%>%filter(n_obs%in%error.index1|n_obs%in%error.index2)
+
+### results in losing ~ 1/3 of the data - need to think about imputation possibilities
+
 
 ####################################################################
 # Models
 ####################################################################
 
 ### Model taxonomy with pol.rpts and arrest.all.tot.pc
-library(arm)
 
-poisson0<-glm(pol.rpts~arrest.all.tot.pc, data=dat, family=poisson(), offset=log(child.pop))
+train<-dat%>%filter(year<2012)
+offense<-unique(train$offense)[-1]
 
-### FOLLOWING GELMAN 45
+test<-dat%>%filter(year==2012)
 
-lm0<-lm(pol.tot.pc~arrest.all.tot.pc, data=dat)
-plot(dat$arrest.all.tot.pc, dat$pol.tot.pc, pch=".")
-x<-(dat$arrest.all.tot.pc)
-curve(cbind(1, x)%*%coef(lm0), add=TRUE)
-lm0.sim<-sim(lm0)
-for(i in 1:10){
-  curve(cbind(1,x)%*%coef(lm0.sim)[i,], add=TRUE, col="gray")
-}
-curve(cbind(1, x)%*%coef(lm0), add=TRUE)
+### FIT MODELS WITH 1/4 SAMPLE
+# FIPS.samp<-sample(unique(test$FIPS), 40)
+# train<-train%>%filter(FIPS%in%FIPS.samp)
+# test<-test%>%filter(FIPS%in%FIPS.samp)
 
-gamma0<-glm(pol.tot.pc~arrest.all.tot.pc, data=dat, family=Gamma(link=log))
-plot(dat$arrest.all.tot.pc, dat$pol.tot.pc, pch=".")
-x<-(dat$arrest.all.tot.pc)
-curve(cbind(1, x)%*%coef(gamma0), add=TRUE)
-gamma0.sim<-sim(gamma0)
-for(i in 1:10){
-  curve(exp(cbind(1,x)%*%coef(gamma0.sim)[i,]), add=TRUE, col="gray")
-}
-curve(exp(cbind(1, x)%*%coef(gamma0)), add=TRUE)
+gender.train<-train%>%filter(gender=="male"|gender=="female")
+gender.train<-gender.train[!(is.na(gender.train$offense)),]
+gender.test<-train%>%filter(gender=="male"|gender=="female")
+gender.test<-gender.test[!(is.na(gender.test$offense)),]
 
-poisson0<-glm(pol.rpts~arrest.all.tot.pc, data=dat, family=poisson(), offset=log(child.pop))
-plot(dat$arrest.all.tot.pc, dat$pol.tot.pc, pch=".")
-x<-(dat$arrest.all.tot.pc)
-curve(cbind(1, x)%*%coef(poisson0), add=TRUE)
-poisson0.sim<-sim(poisson0)
-for(i in 1:10){
-  curve(exp(cbind(1,x)%*%coef(poisson0.sim)[i,]), add=TRUE, col="gray")
-}
-curve(exp(cbind(1, x)%*%coef(poisson0)), add=TRUE)
+race.train<-train%>%filter(race!="all")
+race.train<-race.train[!(is.na(race.train$offense)),]
+race.test<-train%>%filter(race!="all")
+race.test<-race.test[!(is.na(race.test$offense)),]
 
-lm1<-lm(pol.tot.pc~arrest.all.tot.pc+child.pov.pct, data=dat)
-beta.hat<-coef(lm1)
-beta.sim<-coef(sim(lm1))
+all.train<-train%>%filter(race=="all"&gender=="all")
+all.train<-all.train[!(is.na(all.train$offense)),]
+all.test<-train%>%filter(race=="all"&gender=="all")
+all.test<-all.test[!(is.na(all.test$offense)),]
 
-plot(dat$arrest.all.tot.pc, dat$pol.tot.pc, pch=".")
-for(i in 1:10){
-  curve(cbind(1,dat$arrest.all.tot.pc, mean(dat$child.pov.pct))%*%coef(beta.sim)[i,], add=TRUE, col="gray")
-}
-curve(cbind(1,mean(dat$child.pov.pct), x)%*%coef(beta.sim)[i,], add=TRUE, col="black")
+gender.dat<-dat%>%filter(gender=="male"|gender=="female")
+gender.dat<-gender.dat[!(is.na(gender.dat$offense)),]
 
-gamma1<-glm(pol.tot.pc~arrest.all.tot.pc, data=dat, family=Gamma(link=log))
-plot(dat$arrest.all.tot.pc, dat$pol.tot.pc, pch=".")
-x<-(dat$arrest.all.tot.pc)
-curve(cbind(1, x)%*%coef(gamma1), add=TRUE)
-gamma1.sim<-sim(gamma1)
-for(i in 1:11){
-  curve(exp(cbind(1,x)%*%coef(gamma1.sim)[i,]), add=TRUE, col="gray")
-}
-curve(exp(cbind(1, x)%*%coef(gamma1)), add=TRUE)
+race.dat<-dat%>%filter(race!="all")
+race.dat<-race.dat[!(is.na(race.dat$offense)),]
 
-poisson1<-glm(pol.rpts~arrest.all.tot.pc, data=dat, family=poisson(), offset=log(child.pop))
-plot(dat$arrest.all.tot.pc, dat$pol.tot.pc, pch=".")
-x<-(dat$arrest.all.tot.pc)
-curve(cbind(1, x)%*%coef(poisson1), add=TRUE)
-poisson1.sim<-sim(poisson1)
-for(i in 1:11){
-  curve(exp(cbind(1,x)%*%coef(poisson1.sim)[i,]), add=TRUE, col="gray")
-}
-curve(exp(cbind(1, x)%*%coef(poisson1)), add=TRUE)
+all.dat<-dat%>%filter(race=="all"&gender=="all")
+all.dat<-all.dat[!(is.na(all.dat$offense)),]
 
+### Do out of sample prediction
+poisson0<-glm(cases~arrest.rt*offense-1, 
+              data=all.train, family=poisson(), offset=log(child.pop))
 
-#### RUN EACH MODEL FOR DIFF CATS OF OFFENSES FOR ALL GROUPS
-
-## unconditional growth model, poisson, convergence problems
-## unconditional growth negbin, convergence problems
-## convergence problems even in no FE model
-## intercept only model
-## with overdispersion
-## State random effects matter alot
-                                                                                                                                                                                                                                                                                                   
-
-dat$n_obs<-1:nrow(dat)
-
-#### MODEL SPECIFICATIONS - PARTIAL POOLING
-total.all<-pol.rpts~
-  scale(infmort)*scale(arrest.all.tot.pc)+
-  scale(infmort)*scale(police.pc)+
-  scale(child.pov.pct)*scale(police.pc)+
-  scale(child.pov.pct)*scale(arrest.all.tot.pc)+
-  scale(pop.density)+
-  scale(infmort.mean)+scale(child.pov.pct.mean)+
-  scale(arrest.all.tot.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
-
-total.viol<-pol.rpts~
-  scale(infmort)*scale(arrest.viol.tot.pc)+
-  scale(infmort)*scale(police.pc)+
-  scale(child.pov.pct)*scale(police.pc)+
-  scale(child.pov.pct)*scale(arrest.viol.tot.pc)+
-  scale(pop.density)+
-  scale(infmort.mean)+scale(child.pov.pct.mean)+
-  scale(arrest.viol.tot.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
-
-total.drug<-pol.rpts~
-  scale(infmort)*scale(arrest.drug.tot.pc)+
-  scale(infmort)*scale(police.pc)+
-  scale(child.pov.pct)*scale(police.pc)+
-  scale(child.pov.pct)*scale(arrest.drug.tot.pc)+
-  scale(pop.density)+
-  scale(infmort.mean)+scale(child.pov.pct.mean)+
-  scale(arrest.drug.tot.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
-
-total.qol<-pol.rpts~
-  scale(infmort)*scale(arrest.qol.tot.pc)+
-  scale(infmort)*scale(police.pc)+
-  scale(child.pov.pct)*scale(police.pc)+
-  scale(child.pov.pct)*scale(arrest.qol.tot.pc)+
-  scale(pop.density)+
-  scale(infmort.mean)+scale(child.pov.pct.mean)+
-  scale(arrest.qol.tot.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
-
-
-m.total.all.w<-glmer(total.all, data=dat, family="poisson", offset=log(child.pop),
-                   control=glmerControl(optimizer = "bobyqa"))
-m.total.all<-glmer(total.all, data=dat, family="poisson", offset=log(child.pop),
-                     control=glmerControl(optimizer = "bobyqa"))
-
-m.total.viol<-glmer(total.viol, data=dat, family="poisson", offset=log(child.pop),
-                    control=glmerControl(optimizer = "bobyqa"))
-m.total.drug<-glmer(total.drug, data=dat, family="poisson", offset=log(child.pop),
-                    control=glmerControl(optimizer = "bobyqa"))
-m.total.qol<-glmer(total.qol, data=dat, family="poisson", offset=log(child.pop),
-                   control=glmerControl(optimizer = "bobyqa"))
-
-### MODEL DIAGNOSTICS
-### CHECK BOLKER http://ms.mcmaster.ca/~bolker/R/misc/foxchapter/bolker_chap.html
-plot(fitted(m.total.all),dat$pol.rpts)
+###model is y_{cy}\sim Poisson(n_{cy} exp (\gamma_i + \nu_i * arrest.rt_i))
+### where y_{cy} is report counts, n_{cy} is child pop, 
+###i is offense type, and \nu is the sum of the arrest and arrest interaction coefficients for offense i
+yhat<-exp(predict(poisson0, newdata=all.test))
+RMSE<-sum(sqrt(abs((yhat^2)-(all.test$cases^2))), na.rm=TRUE)
+plot(log(x=all.test$cases), log(yhat))
 abline(0,1)
-plot(residuals(m.total.all), m.total.all@frame$pol.rpts)
-### LOOK INTO BINOMIAL, BETABINOMIAL, GAMMA, ADOLPH SLIDES,
-#Bell and Jones Explaining Fixed Effects: Random Effects Modeling of Time-Series Cross-Sectional and Panel Data
-#Harrison A comparison of observation-level random effect and Beta-Binomial models for modelling overdispersion in Binomial data in ecology & evolution
 
 
-### BLACK ARREST MODELS
+###visualize no pooling models - predicted arrest relationship for each type
 
-blk.all<-pol.blk~
-  scale(nonwht.infmort)*scale(arrest.all.blk.pc)+
-  scale(nonwht.infmort)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(arrest.all.blk.pc)+
-  scale(pop.density)+
-  scale(nonwht.infmort.mean)+scale(blk.chpov_pe.mean)+
-  scale(arrest.all.blk.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  scale(pct.blk)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
+### lm is way overpredicting
 
-blk.viol<-pol.blk~
-  scale(nonwht.infmort)*scale(arrest.viol.blk.pc)+
-  scale(nonwht.infmort)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(arrest.viol.blk.pc)+
-  scale(pop.density)+
-  scale(nonwht.infmort.mean)+scale(blk.chpov_pe.mean)+
-  scale(arrest.viol.blk.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  scale(pct.blk)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
+### KEEP WORKING THROUGH THESE - WRITE OUT MODEL
+### set up separate models for each offense cat, then models for race, gender. one model for race==all, gender==all, one for race!=all, and one for gender!=all
 
-blk.drug<-pol.blk~
-  scale(nonwht.infmort)*scale(arrest.drug.blk.pc)+
-  scale(nonwht.infmort)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(arrest.drug.blk.pc)+
-  scale(pop.density)+
-  scale(nonwht.infmort.mean)+scale(blk.chpov_pe.mean)+
-  scale(arrest.drug.blk.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  scale(pct.blk)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
 
-blk.qol<-pol.blk~
-  scale(nonwht.infmort)*scale(arrest.qol.blk.pc)+
-  scale(nonwht.infmort)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(arrest.qol.blk.pc)+
-  scale(pop.density)+
-  scale(nonwht.infmort.mean)+scale(blk.chpov_pe.mean)+
-  scale(arrest.qol.blk.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  scale(pct.blk)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
+### NO POOLING - WITHIN MODEL
+w1.all<-glm(cases~arrest.rt.s*offense+scale(year)+scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+              scale(pop.density)+scale(year)+scale(infmort)+scale(MURDER_mav)+factor(county), 
+            offset=log(child.pop), data=all.train, family=quasipoisson(link="log"))
 
-m.blk.all<-glmer(blk.all, data=dat, family="poisson", offset=log(blk.child.pop),
-                   control=glmerControl(optimizer = "bobyqa"))
-m.blk.viol<-glmer(blk.viol, data=dat, family="poisson", offset=log(blk.child.pop),
-                    control=glmerControl(optimizer = "bobyqa"))
-m.blk.drug<-glmer(blk.drug, data=dat, family="poisson", offset=log(blk.child.pop),
-                    control=glmerControl(optimizer = "bobyqa"))
-m.blk.qol<-glmer(blk.qol, data=dat, family="poisson", offset=log(blk.child.pop),
-                   control=glmerControl(optimizer = "bobyqa"))
 
-dat<-dat%>%filter(pol.blk/blk.child.pop<1)
-dat$pol.blk<-as.integer(dat$pol.blk)
 
-blk.all.binom<-cbind(pol.blk,blk.child.pop-pol.blk)~
-  scale(nonwht.infmort)*scale(arrest.all.blk.pc)+
-  scale(nonwht.infmort)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(police.pc)+
-  scale(blk.chpov_pe)*scale(arrest.all.blk.pc)+
-  scale(pop.density)+
-  scale(nonwht.infmort.mean)+scale(blk.chpov_pe.mean)+
-  scale(arrest.all.blk.pc.mean)+scale(police.pc.mean)+
-  scale(pop.density.mean)+
-  scale(pct.blk)+
-  (1|state)+(1|FIPS)+(1|year)+(1|n_obs)
+w1.gender<-glm(cases~arrest.rt.s*gender+arrest.rt.s*offense+scale(year)+factor(FIPS), 
+               offset=log(child.pop), data=gender.train, family=quasipoisson(link="log"))
+w1.race<-glm(cases~arrest.rt.s*race+arrest.rt.s*offense+scale(year)+factor(FIPS), 
+             offset=log(child.pop), data=race.train, family=quasipoisson(link="log"))
 
-m.blk.all.binom<-glmer(blk.all.binom, data=dat, family=binomial)
+### GLMM - PARTIAL POOLING - OVERDISPERSED
+runOffense<-function(data, model){
+  temp<-list()
+  for(i in 1:length(offense)){
+    print(i)
+    data<-data%>%filter(offense==offense[i])
+    ptm <- proc.time()
+    fit<-glmer(model, data=data, offset=log(child.pop), family=poisson, 
+               control=glmerControl(optimizer = "bobyqa"), verbose=TRUE)
+    proc.time() - ptm
+    temp[[i]]<-fit
+  }
+  out(temp)
+}
 
-### weird problem with high residuals on small fitted. not sure how to adjust for that. 
-### go through gelman model taxonomy formally, keep all in here, run diagnostic plots, do more datavis, store it
+
+p1.all<-cases~arrest.rt.s+scale(year)+
+                (1|FIPS)+(1|n_obs)
+
+p1.race<-cases~arrest.rt.s+scale(year)+
+                 (1|FIPS)+(1|n_obs)+(arrest.rt.s|race)
+
+p1.gender<-cases~arrest.rt.s+scale(year)+
+                   (1|FIPS)+(1|n_obs)+(arrest.rt.s|race) 
+                 
+all.p1list<-runOffense(all.dat, p1.all)
+race.p1list<-runOffense(race.dat, p1.race)
+gender.p1list<-runOffense(gender.dat, p1.gender)
+
+
+
+
+### RE MODELS HAVING A HARD TIME CONVERGING RELATIVE TO INTERACTION MODELS maybe hold out for bayesian for full re specs
+ptm <- proc.time()
+proc.time() - ptm
+
+yhat<-exp(predict(p1.gender, newdata=gender.test))
+plot(log(x=p1.gender@frame$cases), log(fitted(p1.gender)))
+abline(0,1)
+
+
+
+
+p2.all<-glmer(cases~arrest.rt.s+offense+
+                scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+                scale(pop.density)+scale(year)+scale(infmort)+scale(MURDER_mav)+
+                (1|county)+(1|n_obs)+(1|state), 
+              data=all.train, family=poisson, offset=log(child.pop), control=glmerControl(optimizer = "bobyqa"))
+
+### CHECK FIT ON TEST SET FOR EACH
+
+p2.gender<- glmer(cases~arrest.rt.s+offense+scale(year)+
+                scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+                scale(pop.density)+scale(year)+scale(infmort)+scale(MURDER_mav)+
+                (1|county)+(1|state)+(1|n_obs)+(1+arrest.rt.s|gender), 
+                data=gender.train, offset=log(child.pop), family=poisson, control=glmerControl(optimizer = "bobyqa"))
+p2.race<-glmer(cases~arrest.rt.s+offense+scale(year)+
+              scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+              scale(pop.density)+scale(year)+scale(MURDER_mav)+
+              scale(nonwht.infmort)+scale(wht.infmort)+
+              (1+arrest.rt.s|race)+(1|county)+(1|state)+(1|n_obs), 
+              data=race.train, offset=log(child.pop), family=poisson, control=glmerControl(optimizer = "bobyqa"))
+
+
+
+p2.gender.int<- glmer(cases~arrest.rt.s+offense+arrest.rt.s*gender+scale(year)+
+                scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+                scale(pop.density)+scale(year)+scale(infmort)+scale(MURDER_mav)+
+                (1|county)+(1|state)+(1|n_obs), 
+                data=gender.train, offset=log(child.pop), family=poisson, control=glmerControl(optimizer = "bobyqa"))
+p2.race<-glmer(cases~arrest.rt.s+offense+arrest.rt.s*race+scale(year)+
+              scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+              scale(pop.density)+scale(year)+scale(MURDER_mav)+
+              scale(nonwht.infmort)+scale(wht.infmort)+
+              (1|county)+(1|state)+(1|n_obs), 
+              data=race.train, offset=log(child.pop), family=poisson, control=glmerControl(optimizer = "bobyqa"))
+
+
+p2.gender.stan<- stan_glmer(cases~arrest.rt.s+offense+scale(year)+
+                scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+                scale(pop.density)+scale(year)+scale(infmort)+scale(MURDER_mav)+
+                (1|county)+(1|state)+(1|n_obs)+(1+arrest.rt.s|gender), 
+                data=gender.train, offset=log(child.pop), family=poisson, cores=cores,
+                prior=normal(0, 2.5),  prior_intercept = normal(0, 5), prior_covariance = decov(1,1,1,1),
+                chains=1, iter=100)
+p2.race.stan<-stan_glmer(cases~arrest.rt.s+offense+scale(year)+
+              scale(I(child.pov/child.pop))+scale(officers/adult.pop)+
+              scale(pop.density)+scale(year)+scale(MURDER_mav)+
+              scale(nonwht.infmort):(race!="wht")+scale(wht.infmort):(race=="wht")+
+              (1+arrest.rt.s|race)+(1|county)+(1|state)+(1|n_obs), 
+              data=race.train, offset=log(child.pop), family=poisson, cores=cores)
+
+
+### FEELING GOOD ABOUT THESE MODELS
+
+
+# 
+# ### weird problem with high residuals on small fitted. not sure how to adjust for that. 
+# ### go through gelman model taxonomy formally, keep all in here, run diagnostic plots, do more datavis, store it

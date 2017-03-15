@@ -4,43 +4,51 @@ gc()
 
 library(readr)
 library(dplyr)
-library(lme4)
-library(texreg)
 library(tidyr)
 library(data.table)
-library(ggplot2)
 library(foreign)
 library(haven)
 set.seed(1)
 
 setwd("R:/Project/NCANDS/ncands-csv/")
 ncands.county<-function(dat){
-  dat$race<-with(dat, ifelse(ChRacBl==1, "black",
-                             ifelse(ChRacAI==1, "amind",
+  dat$race<-with(dat, ifelse(ChRacBl==1, "blk",
+                             ifelse(ChRacAI==1, "ai",
                                     ifelse(ChRacNH==1, "hawpi",
-                                           ifelse(ChRacAs==1, "asian",
-                                                  ifelse(ChRacWh==1, "white", "missing"))))))
+                                           ifelse(ChRacAs==1, "aa",
+                                                  ifelse(ChRacWh==1, "wht", "missing"))))))
   
   dat$race[is.na(dat$race)]<-"missing"
   
-  total<-dat%>%group_by(StaTerr, RptFIPS, SubYr)%>%
-    count(RptSrc)
-  race<-dat%>%group_by(StaTerr, RptFIPS, SubYr, race)%>%
-    count(RptSrc)%>%spread(key=race, value=n, fill=0)
-  cases<-dat%>%group_by(StaTerr, RptFIPS, SubYr)%>%
-    summarise(cases=n(), 
-              missing.NA=(sum(RptSrc==99, na.rm=TRUE)+sum(is.na(RptSrc))))
-  cdat<-full_join(full_join(total, race), cases)    
+  total<-dat%>%group_by(RptFIPS, SubYr, race)%>%
+    count(RptSrc)%>%rename(cases=n)
   
-  cdat<-cdat%>%mutate(proportion=missing.NA/cases)  
+  totalNA<-total%>%group_by(RptFIPS, SubYr, race)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
+    summarise(missing.rpt=sum(cases))
   
-  cdat<-cdat%>%mutate(upper=n+missing.NA)
+  total.race<-dat%>%group_by(RptFIPS, SubYr)%>%
+    count(RptSrc)%>%rename(cases=n)%>%mutate(race="all")
+  totalNA.race<-total%>%group_by(RptFIPS, SubYr, RptSrc)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
+    summarise(missing.rpt=sum(cases))%>%mutate(race="all")%>%select(-RptSrc)
+  total.race<-left_join(total.race, totalNA.race)
+  ###create rptsrc==98 for all reports
+  total.rptsrc<-dat%>%group_by(RptFIPS, SubYr)%>%
+    summarise(cases=n())%>%mutate(RptSrc=98)%>%mutate(race="all")
+  totalNA.rptsrc<-total%>%group_by(RptFIPS, SubYr)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
+    summarise(missing.rpt=sum(cases))%>%mutate(RptSrc=98)%>%mutate(race="all")
+  total.rptsrc<-left_join(total.rptsrc, totalNA.rptsrc)
+  all.cat<-bind_rows(total.rptsrc, total.race)
   
-  cdat<-cdat%>%filter(RptSrc==4)
-  names(cdat)<-c("state", "FIPS", "year", "RptSrc", "pol.rpts",
-                 "pol.ai", "pol.aa", "pol.blk", "pol.hpi", "pol.na", "pol.wht",
-                 "tot.reports", "missing.rptsrc", "prop.missing.rptsrc", "pol.rpts.upper")
-  return(as.data.frame(cdat))
+  out<-left_join(total, totalNA)
+  out<-bind_rows(out, all.cat)
+  
+  out$missing.rpt[is.na(out$missing.rpt)]<-0
+  ### filter out missing RptSrc, now tallied in missing.rpt
+  out<-out%>%filter(!((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0)))
+  ### rather than add total cases column, can group_by(RptFIPS, SubYr)%>%summarise(cases=sum(cases))
+  ### in model data
+  out<-out%>%rename(FIPS=RptFIPS, year=SubYr)
+  return(out)
 }
 
 
@@ -93,10 +101,18 @@ county.out<-bind_rows(county.out, ncands.county(dat04))
 rm(dat04)
 gc()
 
-### EDA FOR COUNTY MISSINGNESS
-### create counts by rptsrc, count proportions in each cat
 
-### FILTER DUP KIDS ON SAME REPORT FOR RPTSRC COUNTS
 
-write.csv(county.out, file="ncands-rpt-county-04-12.csv", row.names=FALSE)
+### FILTER de-identified state (fatalities) and Puerto Rico
+county.test<-county.out%>%ungroup()%>%
+  mutate(RptSrc=as.character(RptSrc))%>%as.data.frame()
+county.test$RptSrc<-factor(county.test$RptSrc, 
+                           levels=as.character(c(1:13, 88, 98)))
+levels(county.test$RptSrc)<-c("socserv","med","menthlth","police","edu","daycare","fostercare",
+                              "victim","parent","relative","neighbor","perp","anon","other",
+                              "total")
+
+### recode RptSrc into named cats for ease of interpretation
+
+write.csv(county.test, file="ncands-rpt-county-04-12.csv", row.names=FALSE)
 q(save="no")

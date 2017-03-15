@@ -1,4 +1,6 @@
 .libPaths( c( .libPaths(), "U:/R") )
+rm(list=ls())
+gc()
 
 library(readr)
 library(dplyr)
@@ -9,43 +11,112 @@ library(data.table)
 library(ggplot2)
 library(foreign)
 library(haven)
+library(parallel)
 set.seed(1)
+cores<-detectCores()
 
 setwd("R:/Project/NCANDS/ncands-csv/")
 
 ### RESHAPE DATA TO LONG WITH RACE ID COLUMN - WILL HAVE REPEATED COUNTY ROWS, but way fewer columns
 
-ucr<-read.csv("ucr-county-offense.csv", colClasses=c("character", NA))
+ucr<-read.csv("ucr-gender-plus.csv", colClasses=c("character", "numeric", "character",
+                                                     "numeric", "character", "numeric",
+                                                  "character", "numeric"))
+
 names(ucr)[which(names(ucr)=="YEAR")]<-"year"
-for(i in 2:ncol(ucr)){ucr[,i]<-as.numeric(ucr[,i])}
+ucr[which(ucr$arrest<0),"arrest"]<-NA
+ucr<-ucr%>%filter(!(is.na(FIPS)))
+### murder data missing for 2014
+ucr<-ucr%>%filter(year!=2014)
 
+#### ADD GENDER ARREST RATES AND MURDER MOVING AVERAGES
 
-### assume no zero arrest counties, treat zero arrest counties as missing
+pop<-read.csv("seer-pop.csv", colClasses=c("numeric", rep("character", 2),
+                                           rep("numeric", 3))) 
 
-pop<-read.csv("seer-pop.csv", colClasses=c("character", rep("numeric", 19)))
+pop$gender<-ifelse(pop$sex==0, "all", ifelse(
+  pop$sex==1, "male", ifelse(
+    pop$sex==2, "female", NA
+  )))
 
-cdat<-read.csv("ncands-rpt-county-04-12.csv", colClasses=c("character", "character", 
-                                                           rep("numeric", 13)))
+pop<-pop%>%dplyr::select(-sex)
 
-names(cdat)[which(names(cdat)=="RptFIPS")]<-"FIPS"
-names(cdat)[which(names(cdat)=="SubYr")]<-"year"
-cdat[which(cdat$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
+cdat<-read.csv("ncands-rpt-county-04-12.csv", 
+               colClasses=c("character","numeric", "character",
+                            "character", "numeric",
+                            "numeric"))
+### DROP STATE TOTALS AND DEIDENTIFIED
+
+cdat<-cdat%>%filter(RptSrc=="police")
+cdat<-cdat%>%dplyr::select(-RptSrc)
+### weird - some duplicates
+index<-which(duplicated(cdat))
+cdat<-cdat[-index,]
+
+cdat<-cdat%>%filter(substr(FIPS, 3, 5)!="000")%>%filter(substr(FIPS, 3, 5)!="999")%>%
+  filter(substr(FIPS, 1, 2)!="NA")
+cdat<-cdat%>%filter(substr(FIPS, 1, 2)!="72")
+###some missing FIPS codes in county file I made - coming between puerto rico and death de-identified
+cdat<-cdat%>%filter(FIPS!="")
+missing.race<-data.table::dcast(setDT(cdat), FIPS+year~race, value.var="cases", fun.aggregate=sum)
+missing.race<-missing.race%>%dplyr::select(c(FIPS, year, missing))%>%
+  rename(missing.race=missing)
+cdat<-left_join(cdat, missing.race)%>%filter(race%in%c("ai", "all", "blk", "wht"))
+
 
 ### think about incorporating reported intervals into measurement error models
-pov<-read.csv("saipe.csv", colClasses=c(rep("numeric", 7), "character", rep("numeric", 7), "character"))
+pov<-read.csv("saipe.csv", colClasses=c(rep("numeric", 7), "character","character",
+                                        rep("numeric", 7), "character"))
+pov$race<-"all"
+pov<-pov%>%dplyr::select(-c(stname, state))
+pov<-pov%>%dplyr::select(child.pov, child.pov.se, FIPS, race, year, median.hh.income)
 
+
+
+### infmort censored for small pops, could search for max(blk.pop, ai.pop) for county years and assign that way, but not perfect - fuck it
+### script to ID max(nonwhtpop) by county for race assignment, too much censored missing
+# pop.test<-pop%>%dplyr::select(year, FIPS, race, child.pop)%>%
+#   filter(!(race%in%c("all", "wht", "lat", "aa")))%>%distinct()
+# 
+# inf.mort.key<-data.frame("FIPS"=NA, "year"=NA, "race.key"=NA)
+# for(i in 1:length(unique(pop.test$FIPS))){
+#   temp<-pop.test%>%filter(FIPS==unique(pop.test$FIPS)[i])
+#   for(j in 1:length(unique(temp$year))){
+#     temp2<-temp%>%filter(year==unique(temp$year)[j])
+#     max.race<-temp2[order(temp2$child.pop, decreasing=TRUE), ][1, "race"]
+#     inf.mort.key<-rbind(inf.mort.key, c(unique(pop.test$FIPS)[i], unique(temp$year)[j], max.race))
+#   }
+#   print(i)
+# }
+# 
+# inf.mort.key<-inf.mort.key[-1,]
+# inf.mort.key$year<-as.numeric(inf.mort.key$year)
 
 inf.mort<-read.csv("infmort-clean.csv", colClasses = c(rep("character",3),
                                                        rep("numeric", 4)))
+#### GOING TO KEEP WIDE BECAUSE OF MISMATCH ON RACE, USE DUMMIES TO ZERO OUT NONWHT/WHT in models
+#inf.mort<-gather(inf.mort, race, mort,-c(FIPS, state, county, year))
+# inf.mort.test<-left_join(inf.mort, inf.mort.key)
+# inf.mort.test$race<-ifelse(inf.mort.test$race=="infmort", "all",
+#                       ifelse(inf.mort.test$race=="wht.infmort", "wht",
+#                              ifelse(inf.mort.test$race=="nonwht.infmort", inf.mort.test$race.key, inf.mort.test$race)))
 
+cname<-inf.mort%>%dplyr::select(FIPS, state, county)
+cname<-unique(cname)
+#inf.mort<-inf.mort.test%>%dplyr::select(-c(race.key))
+
+### consider using infmort at state level? probably best given huge missing in county
+### filter only state data
+inf.mort<-inf.mort%>%filter(substr(FIPS, 3, 5)=="000")%>%dplyr::select(-c(FIPS, county))
+
+                            
 ###nhgis poverty data, includes standard errors for estimates
-nhgis<-read.csv("nhgis-chpov.csv", colClasses=c(rep("numeric", 8), "character", "numeric"))
+nhgis<-read.csv("nhgis-chpov.csv", colClasses=c("character", "numeric",
+                                                "character", "numeric",
+                                                "numeric"))
+names(nhgis)[4:5]<-c("child.pov", "child.pov.se")
 #### data are 5 yr, currently using 1st yr as year, add 1 for better match
 nhgis$year<-nhgis$year+1
-
-# emp<-read.csv("county-emp.csv", colClasses =
-#                 c(rep("character", 5), rep(NA, 6)))
-# emp<-emp%>%dplyr::select(FIPS, year, lawenf, totemp)
 
 density<-read.csv("density.csv",
                   colClasses = c(rep("character", 7),
@@ -53,119 +124,31 @@ density<-read.csv("density.csv",
 names(density)[5]<-"FIPS"
 names(density)[12]<-"land.area"
 density<-density%>%dplyr::select(FIPS, land.area)
+density<-left_join(pop%>%filter(gender=="all", race=="all")%>%
+                     mutate(tot.pop=adult.pop+child.pop), density)
+density$pop.density<-density$tot.pop/density$land.area
+density<-density%>%dplyr::select(year, FIPS, pop.density)
 
-dat<-left_join(
-  left_join(
-  left_join(
-  left_join(
-  left_join(
-  left_join(
-    cdat, inf.mort), pop), ucr), pov),
-  density), nhgis)
+cdat[which(cdat$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
 
-sdat<-dat%>%group_by(state, year)%>%summarise_if(is.numeric, funs(sum(., na.rm=TRUE)))%>%
-  dplyr::select(-contains("infmort"), -prop.missing.rptsrc, - RptSrc)
-sdat[sdat==0]<-NA
+ucr[which(ucr$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
 
-#filter out de-identified counties for now, maybe create state aggregates later for separate L1 frame
-dat<-dat%>%filter(!(substr(FIPS, 3, 5)%in%c("000", "999")))
 
-#### MAKE RATES AND CLEAN VARS
-###
-dat<-dat%>%mutate(pol.tot.pc=pol.rpts/child.pop,
-                  pol.ai.pc=pol.ai/ai.child.pop,
-                  pol.aa.pc=pol.aa/aa.child.pop,
-                  pol.blk.pc=pol.blk/blk.child.pop,
-                  pol.wht.pc=pol.wht/wht.child.pop,
-                  arrest.all.tot.pc=all.tot/adult.pop,
-                  arrest.all.wht.pc=all.wht/wht.adult.pop,
-                  arrest.all.blk.pc=all.blk/blk.adult.pop,
-                  arrest.all.ai.pc=all.ai/ai.adult.pop,
-                  arrest.all.aa.pc=all.aa/aa.adult.pop,
-                  arrest.viol.tot.pc=viol.tot/adult.pop,
-                  arrest.viol.wht.pc=viol.wht/wht.adult.pop,
-                  arrest.viol.blk.pc=viol.blk/blk.adult.pop,
-                  arrest.viol.ai.pc=viol.ai/ai.adult.pop,
-                  arrest.viol.aa.pc=viol.aa/aa.adult.pop,
-                  arrest.drug.tot.pc=drug.tot/adult.pop,
-                  arrest.drug.wht.pc=drug.wht/wht.adult.pop,
-                  arrest.drug.blk.pc=drug.blk/blk.adult.pop,
-                  arrest.drug.ai.pc=drug.ai/ai.adult.pop,
-                  arrest.drug.aa.pc=drug.aa/aa.adult.pop,
-                  arrest.qol.tot.pc=qol.tot/adult.pop,
-                  arrest.qol.wht.pc=qol.wht/wht.adult.pop,
-                  arrest.qol.blk.pc=qol.blk/blk.adult.pop,
-                  arrest.qol.ai.pc=qol.ai/ai.adult.pop,
-                  arrest.qol.aa.pc=qol.aa/aa.adult.pop,
-                  pop.density=tot.pop/land.area,
-                  police.pc=officers/tot.pop,
-                  pct.blk=blk.pop/tot.pop,
-                  pct.wht=wht.pop/tot.pop,
-                  pct.ai=ai.pop/tot.pop,
-                  pct.aa=aa.pop/tot.pop)
+pop.dens<-left_join(pop, density)
+pov.full<-full_join(pov, nhgis)
 
-sdat<-sdat%>%mutate(pol.tot.pc=pol.rpts/child.pop,
-                    pol.ai.pc=pol.ai/ai.child.pop,
-                    pol.aa.pc=pol.aa/aa.child.pop,
-                    pol.blk.pc=pol.blk/blk.child.pop,
-                    pol.wht.pc=pol.wht/wht.child.pop,
-                    arrest.all.tot.pc=all.tot/adult.pop,
-                    arrest.all.wht.pc=all.wht/wht.adult.pop,
-                    arrest.all.blk.pc=all.blk/blk.adult.pop,
-                    arrest.all.ai.pc=all.ai/ai.adult.pop,
-                    arrest.all.aa.pc=all.aa/aa.adult.pop,
-                    arrest.viol.tot.pc=viol.tot/adult.pop,
-                    arrest.viol.wht.pc=viol.wht/wht.adult.pop,
-                    arrest.viol.blk.pc=viol.blk/blk.adult.pop,
-                    arrest.viol.ai.pc=viol.ai/ai.adult.pop,
-                    arrest.viol.aa.pc=viol.aa/aa.adult.pop,
-                    arrest.drug.tot.pc=drug.tot/adult.pop,
-                    arrest.drug.wht.pc=drug.wht/wht.adult.pop,
-                    arrest.drug.blk.pc=drug.blk/blk.adult.pop,
-                    arrest.drug.ai.pc=drug.ai/ai.adult.pop,
-                    arrest.drug.aa.pc=drug.aa/aa.adult.pop,
-                    arrest.qol.tot.pc=qol.tot/adult.pop,
-                    arrest.qol.wht.pc=qol.wht/wht.adult.pop,
-                    arrest.qol.blk.pc=qol.blk/blk.adult.pop,
-                    arrest.qol.ai.pc=qol.ai/ai.adult.pop,
-                    arrest.qol.aa.pc=qol.aa/aa.adult.pop,
-                    pop.density=tot.pop/land.area,
-                    police.pc=officers/tot.pop)
+m<-left_join(cdat, pop.dens)
+m0<-left_join(m, ucr)
+m1<-left_join(m0, pov.full)
+m2<-left_join(m1, cname)
+dat<-left_join(m2, inf.mort)
+#### join all FIPS last, join in descending order of complexity
 
-dat<-dat%>%group_by(FIPS)%>%
-  mutate(infmort.mean=mean(infmort, na.rm=TRUE),
-         nonwht.infmort.mean=mean(nonwht.infmort, na.rm=TRUE),
-         wht.infmort.mean=mean(wht.infmort, na.rm=TRUE),
-         child.pov.pct.mean=mean(child.pov.pct, na.rm=TRUE),
-         blk.chpov_pe.mean=mean(blk.chpov_pe, na.rm=TRUE),
-         ai.chpov_pe.mean=mean(ai.chpov_pe, na.rm=TRUE),
-         aa.chpov_pe.mean=mean(aa.chpov_pe, na.rm=TRUE),
-         wht.chpov_pe.mean=mean(wht.chpov_pe, na.rm=TRUE),
-         arrest.all.tot.pc.mean=mean(arrest.all.tot.pc, na.rm=TRUE),
-         arrest.viol.tot.pc.mean=mean(arrest.viol.tot.pc, na.rm=TRUE),
-         arrest.drug.tot.pc.mean=mean(arrest.drug.tot.pc, na.rm=TRUE),
-         arrest.qol.tot.pc.mean=mean(arrest.qol.tot.pc, na.rm=TRUE),
-         arrest.all.blk.pc.mean=mean(arrest.all.blk.pc, na.rm=TRUE),
-         arrest.viol.blk.pc.mean=mean(arrest.viol.blk.pc, na.rm=TRUE),
-         arrest.drug.blk.pc.mean=mean(arrest.drug.blk.pc, na.rm=TRUE),
-         arrest.qol.blk.pc.mean=mean(arrest.qol.blk.pc, na.rm=TRUE),
-         arrest.all.wht.pc.mean=mean(arrest.all.wht.pc, na.rm=TRUE),
-         arrest.viol.wht.pc.mean=mean(arrest.viol.wht.pc, na.rm=TRUE),
-         arrest.drug.wht.pc.mean=mean(arrest.drug.wht.pc, na.rm=TRUE),
-         arrest.qol.wht.pc.mean=mean(arrest.qol.wht.pc, na.rm=TRUE),
-         arrest.all.ai.pc.mean=mean(arrest.all.ai.pc, na.rm=TRUE),
-         arrest.viol.ai.pc.mean=mean(arrest.viol.ai.pc, na.rm=TRUE),
-         arrest.drug.ai.pc.mean=mean(arrest.drug.ai.pc, na.rm=TRUE),
-         arrest.qol.ai.pc.mean=mean(arrest.qol.ai.pc, na.rm=TRUE),
-         arrest.all.aa.pc.mean=mean(arrest.all.aa.pc, na.rm=TRUE),
-         arrest.viol.aa.pc.mean=mean(arrest.viol.aa.pc, na.rm=TRUE),
-         arrest.drug.aa.pc.mean=mean(arrest.drug.aa.pc, na.rm=TRUE),
-         arrest.qol.aa.pc.mean=mean(arrest.qol.aa.pc, na.rm=TRUE),
-         police.pc.mean=mean(police.pc, na.rm=TRUE),
-         pop.density.mean=mean(pop.density, na.rm=TRUE),
-         pct.blk.mean=mean(pct.blk, na.rm=TRUE),
-         pct.wht.mean=mean(pct.wht, na.rm=TRUE),
-         pct.ai.mean=mean(pct.ai, na.rm=TRUE),
-         pct.aa.mean=mean(pct.aa, na.rm=TRUE))
+dat<-dat%>%filter(substr(FIPS, 3, 5)!="000")%>%filter(substr(FIPS, 3, 5)!="999")
+dat<-dat%>%filter(substr(FIPS, 1, 2)!="72")
 
-dat<-dat%>%dplyr::select(-RptSrc, -all.lat, -viol.lat, -drug.lat, -qol.lat)
+z<-which(is.na(dat$state))
+
+dat<-dat%>%filter(race%in%c("ai", "all", "blk", "wht"))
+
+write.csv(dat, "ncands-fc-merge.csv", row.names=FALSE)

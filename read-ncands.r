@@ -113,6 +113,8 @@ levels(county.test$RptSrc)<-c("socserv","med","menthlth","police","edu","daycare
                               "total")
 
 ### recode RptSrc into named cats for ease of interpretation
-
+### Fill zeroes for combinations without observations in data
+county.test<-county.test%>%complete(FIPS, year, race, RptSrc, fill=list(cases=0))
+### write out
 write.csv(county.test, file="ncands-rpt-county-04-12.csv", row.names=FALSE)
 q(save="no")

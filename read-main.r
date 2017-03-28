@@ -13,15 +13,14 @@ library(foreign)
 library(haven)
 library(parallel)
 set.seed(1)
-cores<-detectCores()
 
 setwd("R:/Project/NCANDS/ncands-csv/")
 
 ### RESHAPE DATA TO LONG WITH RACE ID COLUMN - WILL HAVE REPEATED COUNTY ROWS, but way fewer columns
 
 ucr<-read.csv("ucr-gender-plus.csv", colClasses=c("character", "numeric", "character",
-                                                     "numeric", "character", "numeric",
-                                                  "character", "numeric"))
+                                                     "character", "character", "numeric",
+                                                  "numeric", "numeric"))
 
 names(ucr)[which(names(ucr)=="YEAR")]<-"year"
 ucr[which(ucr$arrest<0),"arrest"]<-NA
@@ -132,16 +131,44 @@ density<-density%>%dplyr::select(year, FIPS, pop.density)
 cdat[which(cdat$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
 
 ucr[which(ucr$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
-
+ucr.officers<-ucr%>%filter(race=="all", offense=="all", gender=="all")%>%dplyr::select(FIPS, year, officers, MURDER_mav)
+pop.officers<-pop%>%filter(race=="all", gender=="all")%>%dplyr::select(year, FIPS, adult.pop)
+ucr.officers<-left_join(ucr.officers, pop.officers)%>%mutate(officers.pc=officers/adult.pop, murder.pc=MURDER_mav/adult.pop)%>%
+  dplyr::select(-adult.pop, -officers, -MURDER_mav)
+ucrtest<-left_join(ucr, ucr.officers, by=c("FIPS", "year"))
 
 pop.dens<-left_join(pop, density)
+### bring in budget data
+### make composition vars
+pop.dens%>%filter(gender=="all")%>%
+  dplyr::select(FIPS, year, adult.pop, race)%>%spread(., race, adult.pop)
+
+pop.pct<-left_join(pop.dens,pop.dens%>%filter(gender=="all")%>%
+                     dplyr::select(FIPS, year, adult.pop, race)%>%spread(., race, adult.pop))%>%
+  filter(gender=="all")%>%mutate(pct.race.pop=adult.pop/all)%>%
+  dplyr::select(year, FIPS, race, pct.race.pop)%>%filter(race!="all")
+  
+  
+#mutate(pct.blk=blk/all, pct.ai=ai/all, pct.wht=wht/all)%>%dplyr::select(FIPS, year, pct.blk, pct.ai, pct.wht)
+
+
+pop.dens<-left_join(pop.dens, pop.pct)
+
+
+
 pov.full<-full_join(pov, nhgis)
 
 m<-left_join(cdat, pop.dens)
-m0<-left_join(m, ucr)
+m0<-left_join(m, ucrtest)
 m1<-left_join(m0, pov.full)
 m2<-left_join(m1, cname)
 dat<-left_join(m2, inf.mort)
+dat$stname<-dat$state
+dat$state<-substr(dat$FIPS, 1, 2)
+
+pol.budget<-read.csv("police-budget.csv", stringsAsFactors = FALSE, colClasses = c("character", "numeric", "numeric"))
+dat<-left_join(dat, pol.budget)
+
 #### join all FIPS last, join in descending order of complexity
 
 dat<-dat%>%filter(substr(FIPS, 3, 5)!="000")%>%filter(substr(FIPS, 3, 5)!="999")

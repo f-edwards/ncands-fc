@@ -343,8 +343,21 @@ test<-full_join(ucr.out%>%mutate(gender="all"), gender.merge)
 
 test2<-left_join(test, c.offense.ucr)
 
-write.csv(test2, "R:/Project/NCANDS/ncands-csv/ucr-gender-plus.csv", row.names=FALSE)
+###make NAs for missing offense/FIPS,year,race,gender pairs
+
+fips<-unique(test2$FIPS)
+year<-unique(test2$year)
+race<-unique(test2$race)
+gender<-unique(test2$gender)
+offense<-unique(test2$offense)
+
+m1<-expand.grid(FIPS=fips, year=year, race=race, gender=gender, offense=offense)
+m1<-m1%>%filter(!(race!="all"&gender%in%c("male", "female")))
+
+t1<-left_join(m1, test2)
+
+write.csv(t1, "R:/Project/NCANDS/ncands-csv/ucr-gender-plus.csv", row.names=FALSE)
 
 ##quality test
-table(test2$offense, test2$race)
+table(t1$offense, t1$race)
 table(test2$offense, test2$gender)

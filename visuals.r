@@ -10,7 +10,7 @@ library(shinystan)
 library(lme4)
 library(gridExtra)
 library(grid)
-load("R:/Project/NCANDS/ncands-fc/models4.RData")
+load("R:/Project/NCANDS/ncands-fc/models-partial.RData")
 
 
 ### compare model estimate medians
@@ -150,28 +150,29 @@ make.plot.dat<-function(data, model, label){
   newdata$diff.arrest.rt<-0
   ### median scenario
   scen.mean<-posterior_predict(model, newdata=newdata[1,])
+                               #, offset=log(newdata$child.pop[1]))
   #### diff.arrest + 2sd
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$diff.arrest.rt[2]<-0.005
   newdata$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.10))
-  scen.arrest.diff<-posterior_predict(model, newdata=newdata[2,])
+  scen.arrest.diff<-posterior_predict(model, newdata=newdata[2,], offset=log(child.pop))
   ### mean.arrest + 2sd
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$diff.arrest.rt[3]<-0.005
   newdata$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.90))
-  scen.arrest.mean<-posterior_predict(model, newdata=newdata[3,])
+  scen.arrest.mean<-posterior_predict(model, newdata=newdata[3,], offset=log(child.pop))
   
   ### make officers pc low/high
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.10))
   newdata$diff.officers.pc<-0.0005
-  scen.off.low<-posterior_predict(model, newdata[4,])
+  scen.off.low<-posterior_predict(model, newdata[4,], offset=log(child.pop))
   
   ### make officers pc low/high
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.90))
   newdata$diff.officers.pc<-0.0005
-  scen.off.low<-posterior_predict(model, newdata[5,])
+  scen.off.low<-posterior_predict(model, newdata[5,], offset=log(child.pop))
   
   plot.temp<-data.frame("model"=label, "name"="    -Median county", "lower"=quantile(scen.mean, 0.25), "median"=quantile(scen.mean, 0.5), "upper"=quantile(scen.mean, 0.75))
   plot.temp$name<-as.character(plot.temp$name)

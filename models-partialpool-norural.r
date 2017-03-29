@@ -24,6 +24,15 @@ set.seed(1)
 setwd("R:/Project/NCANDS/ncands-fc/")
 dat.in<-read.csv("R:/Project/NCANDS/ncands-csv/ncands-fc-merge.csv")
 dat.in<-dat.in%>%filter(year>2005)
+dat.rural<-dat.in%>%filter(gender=="all")%>%filter(race=="all")%>%filter(child.pop<50000)
+rural.index<-unique(dat.rural$FIPS)
+dat.in<-dat.in%>%filter(!(FIPS%in%rural.index))
+
+#### for models excluding cases with small pops, drop those cases at threshold of inclusion - 
+#### 0.05 quantile of cases pc is 0.02, would take population of 50000 to be included in data at low rpt rate
+#### drop all places with total child pops < 50000
+
+
 # 
 # test<-amelia(dat.in, ts="year", cs=c("FIPS"), 
 #              idvars=c("median.hh.income", "pct.race.pop", "state", "county", "stname"),
@@ -66,23 +75,23 @@ dat<-dat%>%filter(!(is.na(arrest)))
 within.dat<-dat
 within.dat<-within.dat%>%group_by(FIPS)%>%
   mutate(mean.murder.pc=mean(murder.pc, na.rm=TRUE), mean.officers.pc=mean(officers.pc, na.rm=TRUE),
-   mean.infmort=mean(infmort, na.rm=TRUE), mean.wht.infmort=mean(wht.infmort, na.rm=TRUE), 
-   mean.nonwht.infmort=mean(nonwht.infmort, na.rm=TRUE),
-   mean.pop.density=mean(pop.density, na.rm=TRUE),
-   mean.pol.infl.pc=mean(pol.infl.pc, na.rm=TRUE))%>%ungroup
+         mean.infmort=mean(infmort, na.rm=TRUE), mean.wht.infmort=mean(wht.infmort, na.rm=TRUE), 
+         mean.nonwht.infmort=mean(nonwht.infmort, na.rm=TRUE),
+         mean.pop.density=mean(pop.density, na.rm=TRUE),
+         mean.pol.infl.pc=mean(pol.infl.pc, na.rm=TRUE))%>%ungroup
 within.dat<-within.dat%>%group_by(FIPS, gender, race, offense)%>%mutate(mean.arrest.rt=mean(arrest.rt, na.rm=TRUE))%>%ungroup
 within.dat<-within.dat%>%group_by(FIPS, race)%>%mutate(mean.child.pov.pc=mean(child.pov/child.pop, na.rm=TRUE),
                                                        mean.pct.race.pop=mean(pct.race.pop))%>%ungroup
 within.dat<-within.dat%>%
   mutate(diff.murder.pc=murder.pc-mean.murder.pc, 
          diff.officers.pc=officers.pc-mean.officers.pc,
-        diff.infmort=infmort-mean.infmort, diff.wht.infmort=wht.infmort-mean.wht.infmort,
-        diff.nonwht.infmort=nonwht.infmort-mean.nonwht.infmort, 
-        diff.arrest.rt=arrest.rt-mean.arrest.rt, 
-        diff.child.pov.pc=(child.pov/child.pop)-mean.child.pov.pc,
-        diff.pop.density=pop.density-mean.pop.density,
-        diff.pol.infl.pc=pol.infl.pc-mean.pol.infl.pc,
-        diff.pct.race.pop=mean.pct.race.pop-pct.race.pop)
+         diff.infmort=infmort-mean.infmort, diff.wht.infmort=wht.infmort-mean.wht.infmort,
+         diff.nonwht.infmort=nonwht.infmort-mean.nonwht.infmort, 
+         diff.arrest.rt=arrest.rt-mean.arrest.rt, 
+         diff.child.pov.pc=(child.pov/child.pop)-mean.child.pov.pc,
+         diff.pop.density=pop.density-mean.pop.density,
+         diff.pol.infl.pc=pol.infl.pc-mean.pol.infl.pc,
+         diff.pct.race.pop=mean.pct.race.pop-pct.race.pop)
 
 ### results in losing ~ 1/3 of the data - need to think about imputation possibilities
 
@@ -98,7 +107,7 @@ within.dat<-within.dat%>%
 # train<-dat%>%filter(year<2012)
 # 
 ##running only on all for figuring out fitting
-           #, "viol", "drug", "prop", "qol")
+#, "viol", "drug", "prop", "qol")
 
 
 # test<-dat%>%filter(year==2012)
@@ -199,38 +208,26 @@ runOffense.glmer<-function(data, model){
 #   scale(mean.child.pov.pc)+scale(mean.pct.race.pop)*race+
 #   (1|state/FIPS)+(1|n_obs)
 
-within<-cases~scale(diff.arrest.rt)+
-  scale(diff.officers.pc)+
-  scale(diff.pol.infl.pc)+
-  scale(diff.child.pov.pc)+scale(diff.pop.density)+
-  scale(year)+scale(diff.murder.pc)+scale(diff.infmort)+
-  scale(mean.arrest.rt)+scale(mean.officers.pc)+
-  scale(mean.pol.infl.pc)+scale(mean.pop.density)+
-  scale(mean.murder.pc)+
-  scale(mean.child.pov.pc)+scale(mean.infmort)+
-  (1|state/FIPS)+(1|n_obs)
+within<-cases~scale(arrest.rt)+
+  scale(officers.pc)+
+  scale(pol.infl.pc)+
+  scale(I(child.pov/child.pop))+scale(pop.density)+
+  scale(year)+scale(murder.pc)+scale(infmort)++
+  (1|FIPS)+(1|n_obs)
 
-within.wht<-cases~scale(diff.arrest.rt)+
-  scale(diff.officers.pc)+
-  scale(diff.pol.infl.pc)+
-  scale(diff.child.pov.pc)+scale(diff.pop.density)+scale(diff.pct.race.pop)+
-  scale(year)+scale(diff.murder.pc)+scale(diff.infmort)+
-  scale(mean.arrest.rt)+scale(mean.officers.pc)+
-  scale(mean.pol.infl.pc)+scale(mean.pop.density)+
-  scale(mean.murder.pc)+scale(mean.pct.race.pop)+
-  scale(mean.child.pov.pc)+scale(mean.wht.infmort)+
-  (1|state/FIPS)+(1|n_obs)
+within.wht<-cases~scale(arrest.rt)+
+  scale(officers.pc)+
+  scale(pol.infl.pc)+
+  scale(I(child.pov/child.pop))+scale(pop.density)+scale(pct.race.pop)+
+  scale(year)+scale(murder.pc)+scale(infmort)+
+  (1|FIPS)+(1|n_obs)
 
-within.nonwht<-cases~scale(diff.arrest.rt)+
-  scale(diff.officers.pc)+
-  scale(diff.pol.infl.pc)+
-  scale(diff.child.pov.pc)+scale(diff.pop.density)+scale(diff.pct.race.pop)+
-  scale(year)+scale(diff.murder.pc)+scale(diff.infmort)+
-  scale(mean.arrest.rt)+scale(mean.officers.pc)+
-  scale(mean.pol.infl.pc)+scale(mean.pop.density)+
-  scale(mean.murder.pc)+scale(mean.pct.race.pop)+
-  scale(mean.child.pov.pc)+scale(mean.nonwht.infmort)+
-  (1|state/FIPS)+(1|n_obs)
+within.nonwht<-cases~scale(arrest.rt)+
+  scale(officers.pc)+
+  scale(pol.infl.pc)+
+  scale(I(child.pov/child.pop))+scale(pop.density)+scale(pct.race.pop)+
+  scale(year)+scale(murder.pc)+scale(infmort)+
+  (1|FIPS)+(1|n_obs)
 
 # gender.within<-cases~scale(diff.arrest.rt)*gender+offense*gender+
 #   scale(diff.officers.pc)+
@@ -258,7 +255,6 @@ within.nonwht<-cases~scale(diff.arrest.rt)+
 #### THEN RUN SEPARATE MODELS FOR OFFENSE, RACE, GENDER - SUBSET RACE AND GENDER IF 
 #### IT HELPS - FOCUS ON ALL, TAKE ON DRUGS AS AN ADDTL SENSITIVITY TEST
 
-
 b.all.all<-stan_glmer(formula=within, 
                       data=within.dat%>%filter(offense=="all")%>%filter(race=="all")%>%filter(gender=="all"),
                       offset=log(child.pop), family=poisson, 
@@ -266,14 +262,14 @@ b.all.all<-stan_glmer(formula=within,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 # f.men.all<-glmer(within, 
 #                  data=within.dat%>%filter(offense=="all")%>%filter(race=="all")%>%filter(gender=="male"), 
 #                  offset=log(child.pop), family=poisson, 
 #                   control=glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=20000)))
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.men.all<-stan_glmer(formula=within, 
                       data=within.dat%>%filter(offense=="all")%>%filter(gender=="male"), 
@@ -282,16 +278,16 @@ b.men.all<-stan_glmer(formula=within,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.women.all<-stan_glmer(formula=within, 
-                      data=within.dat%>%filter(offense=="all")%>%filter(gender=="female"), 
-                      offset=log(child.pop), family=poisson, 
-                      verbose=1, cores=cores,
-                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                      chains=4, iter=1000)
+                        data=within.dat%>%filter(offense=="all")%>%filter(gender=="female"), 
+                        offset=log(child.pop), family=poisson, 
+                        verbose=1, cores=cores,
+                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.all.white<-stan_glmer(formula=within.wht, 
                         data=within.dat%>%filter(offense=="all")%>%filter(race=="wht"), 
@@ -300,7 +296,7 @@ b.all.white<-stan_glmer(formula=within.wht,
                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                         chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.all.black<-stan_glmer(formula=within.nonwht, 
                         data=within.dat%>%filter(offense=="all")%>%filter(race=="blk"), 
@@ -309,7 +305,7 @@ b.all.black<-stan_glmer(formula=within.nonwht,
                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                         chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.all.amind<-stan_glmer(formula=within.nonwht, 
                         data=within.dat%>%filter(offense=="all")%>%filter(race=="ai"), 
@@ -318,7 +314,7 @@ b.all.amind<-stan_glmer(formula=within.nonwht,
                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                         chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 
 #############################################################################
@@ -326,13 +322,13 @@ save.image(file="models-within.RData")
 #############################################################################
 
 b.all.drug<-stan_glmer(formula=within, 
-                      data=within.dat%>%filter(offense=="drug")%>%filter(race=="all")%>%filter(gender=="all"),
-                      offset=log(child.pop), family=poisson, 
-                      verbose=1, cores=cores,
-                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                      chains=4, iter=1000)
+                       data=within.dat%>%filter(offense=="drug")%>%filter(race=="all")%>%filter(gender=="all"),
+                       offset=log(child.pop), family=poisson, 
+                       verbose=1, cores=cores,
+                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                       chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 # f.men.all<-glmer(within, 
 #                  data=within.dat%>%filter(offense=="all")%>%filter(race=="all")%>%filter(gender=="male"), 
@@ -341,29 +337,29 @@ save.image(file="models-within.RData")
 
 
 b.white.drug<-stan_glmer(formula=within.wht, 
-                        data=within.dat%>%filter(offense=="drug")%>%filter(race=="wht"), 
-                        offset=log(child.pop), family=poisson, 
-                        verbose=1, cores=cores,
-                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                        chains=4, iter=1000)
+                         data=within.dat%>%filter(offense=="drug")%>%filter(race=="wht"), 
+                         offset=log(child.pop), family=poisson, 
+                         verbose=1, cores=cores,
+                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                         chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.black.drug<-stan_glmer(formula=within.nonwht, 
-                        data=within.dat%>%filter(offense=="drug")%>%filter(race=="blk"), 
-                        offset=log(child.pop), family=poisson, 
-                        verbose=1, cores=cores,
-                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                        chains=4, iter=1000)
+                         data=within.dat%>%filter(offense=="drug")%>%filter(race=="blk"), 
+                         offset=log(child.pop), family=poisson, 
+                         verbose=1, cores=cores,
+                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                         chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.amind.drug<-stan_glmer(formula=within.nonwht, 
-                        data=within.dat%>%filter(offense=="drug")%>%filter(race=="ai"), 
-                        offset=log(child.pop), family=poisson, 
-                        verbose=1, cores=cores,
-                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                        chains=4, iter=1000)
+                         data=within.dat%>%filter(offense=="drug")%>%filter(race=="ai"), 
+                         offset=log(child.pop), family=poisson, 
+                         verbose=1, cores=cores,
+                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                         chains=4, iter=1000)
 
 b.men.drug<-stan_glmer(formula=within, 
                        data=within.dat%>%filter(offense=="drug")%>%filter(gender=="male"), 
@@ -372,7 +368,7 @@ b.men.drug<-stan_glmer(formula=within,
                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.women.drug<-stan_glmer(formula=within, 
                          data=within.dat%>%filter(offense=="drug")%>%filter(gender=="female"), 
@@ -393,7 +389,7 @@ b.all.viol<-stan_glmer(formula=within,
                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 
 b.white.viol<-stan_glmer(formula=within.wht, 
@@ -403,7 +399,7 @@ b.white.viol<-stan_glmer(formula=within.wht,
                          prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                          chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.black.viol<-stan_glmer(formula=within.nonwht, 
                          data=within.dat%>%filter(offense=="viol")%>%filter(race=="blk"), 
@@ -412,7 +408,7 @@ b.black.viol<-stan_glmer(formula=within.nonwht,
                          prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                          chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.amind.viol<-stan_glmer(formula=within.nonwht, 
                          data=within.dat%>%filter(offense=="viol")%>%filter(race=="ai"), 
@@ -428,7 +424,7 @@ b.men.viol<-stan_glmer(formula=within,
                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.women.viol<-stan_glmer(formula=within, 
                          data=within.dat%>%filter(offense=="viol")%>%filter(gender=="female"), 
@@ -443,54 +439,54 @@ b.women.viol<-stan_glmer(formula=within,
 
 
 b.all.qol<-stan_glmer(formula=within, 
-                       data=within.dat%>%filter(offense=="qol")%>%filter(race=="all")%>%filter(gender=="all"),
-                       offset=log(child.pop), family=poisson, 
-                       verbose=1, cores=cores,
-                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                       chains=4, iter=1000)
+                      data=within.dat%>%filter(offense=="qol")%>%filter(race=="all")%>%filter(gender=="all"),
+                      offset=log(child.pop), family=poisson, 
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 
 b.white.qol<-stan_glmer(formula=within.wht, 
-                         data=within.dat%>%filter(offense=="qol")%>%filter(race=="wht"), 
-                         offset=log(child.pop), family=poisson, 
-                         verbose=1, cores=cores,
-                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                         chains=4, iter=1000)
+                        data=within.dat%>%filter(offense=="qol")%>%filter(race=="wht"), 
+                        offset=log(child.pop), family=poisson, 
+                        verbose=1, cores=cores,
+                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural-norural.RData")
 
 b.black.qol<-stan_glmer(formula=within.nonwht, 
-                         data=within.dat%>%filter(offense=="qol")%>%filter(race=="blk"), 
-                         offset=log(child.pop), family=poisson, 
-                         verbose=1, cores=cores,
-                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                         chains=4, iter=1000)
+                        data=within.dat%>%filter(offense=="qol")%>%filter(race=="blk"), 
+                        offset=log(child.pop), family=poisson, 
+                        verbose=1, cores=cores,
+                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.amind.qol<-stan_glmer(formula=within.nonwht, 
-                         data=within.dat%>%filter(offense=="qol")%>%filter(race=="ai"), 
-                         offset=log(child.pop), family=poisson, 
-                         verbose=1, cores=cores,
-                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                         chains=4, iter=1000)
+                        data=within.dat%>%filter(offense=="qol")%>%filter(race=="ai"), 
+                        offset=log(child.pop), family=poisson, 
+                        verbose=1, cores=cores,
+                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                        chains=4, iter=1000)
 
 b.men.qol<-stan_glmer(formula=within, 
-                       data=within.dat%>%filter(offense=="qol")%>%filter(gender=="male"), 
-                       offset=log(child.pop), family=poisson, 
-                       verbose=1, cores=cores,
-                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                       chains=4, iter=1000)
+                      data=within.dat%>%filter(offense=="qol")%>%filter(gender=="male"), 
+                      offset=log(child.pop), family=poisson, 
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")
 
 b.women.qol<-stan_glmer(formula=within, 
-                         data=within.dat%>%filter(offense=="qol")%>%filter(gender=="female"), 
-                         offset=log(child.pop), family=poisson, 
-                         verbose=1, cores=cores,
-                         prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-                         chains=4, iter=1000)
+                        data=within.dat%>%filter(offense=="qol")%>%filter(gender=="female"), 
+                        offset=log(child.pop), family=poisson, 
+                        verbose=1, cores=cores,
+                        prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                        chains=4, iter=1000)
 
-save.image(file="models-within.RData")
+save.image(file="partial-models-norural.RData")

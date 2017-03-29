@@ -1,0 +1,196 @@
+---
+title: "NCANDS-eda"
+author: "Frank Edwards"
+date: "March 29, 2017"
+output: html_document
+---
+
+```{r echo=FALSE}
+library(foreign)
+library(dplyr)
+setwd("R:/Project/NCANDS/ncands-csv/")
+dat12<-read.dta("Child2012v1.dta", convert.factors = FALSE)
+
+dat12$race<-with(dat12, ifelse(ChRacBl==1, "blk",
+                             ifelse(ChRacAI==1, "ai",
+                              ifelse(ChRacNH==1,"hawpi", ifelse(ChRacAs==1, "aa",                                 ifelse(ChRacWh==1, "wht", "missing"))))))
+dat12$race[is.na(dat12$race)]<-"missing"
+  
+
+### TO DO FOR PAPER
+### CROSSTABS ON POL RPT BY MALTYPE
+### CROSSTABS ON POL RPT BY RACE
+### CORRELATIONS BW POL RPT AND ARRESTS, OFFICERS PC, FUDNING
+### VARIANCE IN POL RPTS PC, POL RPTS AS PROPORTION OF TOT BY COUNTY
+
+#### PAPER DESCRIPTIVES
+library(pander)
+
+###contingency table, police report by malt type
+pol.malt<-as.data.frame.matrix(table(dat12$RptSrc==4, dat12$ChMal1))
+### construct as proportions for all non-police, all police reports
+pol.malt[1,]<-pol.malt[1,]/sum(dat12$RptSrc!=4, na.rm=TRUE)                        
+pol.malt[2,]<-pol.malt[2,]/sum(dat12$RptSrc==4, na.rm=TRUE)
+row.names(pol.malt)<-c("All", "Police")
+names(pol.malt)<-c("phys.abuse", "neglect", "med.neglect",
+                   "sex.abuse", "psych.malt", "no.malt",
+                   "other", "missing")
+print("police reports by malt type")
+pander(pol.malt)
+
+print("Total police reports")
+print(sum(dat12$RptSrc==4, na.rm=TRUE))
+
+print("Police reports as proportion of total")
+print(sum(dat12$RptSrc==4, na.rm=TRUE)/nrow(dat12))
+
+### police reports by substantiation
+pol.victim<-as.data.frame.matrix(table(dat12$RptSrc==4,
+                                       dat12$RptVictim))
+pol.victim[1,]<-pol.victim[1,]/sum(dat12$RptSrc!=4, na.rm=TRUE)                        
+pol.victim[2,]<-pol.victim[2,]/sum(dat12$RptSrc==4, na.rm=TRUE)
+
+row.names(pol.victim)<-c("All", "Police")
+names(pol.victim)<-c("No.Victim", "Victim")
+
+print("police reports by confirmed victim")
+pander(pol.victim)
+
+### police reports by child race
+pol.race<-as.data.frame.matrix(table(dat12$RptSrc==4, dat12$race))
+pol.race$aa<-pol.race$aa/sum(dat12$race=="aa", na.rm=TRUE)
+pol.race$ai<-pol.race$ai/sum(dat12$race=="ai", na.rm=TRUE)
+pol.race$blk<-pol.race$blk/sum(dat12$race=="blk", na.rm=TRUE)
+pol.race$hawpi<-pol.race$hawpi/sum(dat12$race=="hawpi", na.rm=TRUE)
+pol.race$missing<-pol.race$missing/sum(dat12$race=="missing", na.rm=TRUE)
+pol.race$wht<-pol.race$wht/sum(dat12$race=="wht", na.rm=TRUE)
+
+row.names(pol.race)<-c("All", "police")
+
+print("Police reports by race")
+pander(pol.race)
+
+### by region
+NE_NE<-c("CT", "ME", "MA", "NH", "RI", "VT") 
+NE_MA<-c("NJ", "NY", "PA")
+MW_ENC<-c("IL", "IN", "MI", "OH", "WI")
+MW_WNC<-c("IA", "KS", "MN","MO", "NE", "ND", "SD")
+S_SA<-c("DE", "DC", "FL", "GA", "MD", "NC", "SC", "VA", "WV")
+S_ESC<-c("AL", "KY", "MS", "TN")
+S_WSC<-c("AR", "LA", "OK", "TX")
+W_MT<-c("AZ", "CO", "ID", "MT", "NV", "NM", "UT", "WY")
+W_P<-c("AK", "CA", "HI", "OR", "WA")
+dat12$region<-with(dat12, ifelse(StaTerr%in%NE_NE, "NE_NE", 
+                         ifelse(StaTerr%in%NE_MA, "NE_MA",
+                         ifelse(StaTerr%in%MW_ENC, "MW_ENC",
+                         ifelse(StaTerr%in%MW_WNC, "MW_WNC",
+                         ifelse(StaTerr%in%S_SA, "S_SA",
+                          ifelse(StaTerr%in%S_ESC, "S_ESC",
+                             ifelse(StaTerr%in%S_WSC, "S_WSC",
+                              ifelse(StaTerr%in%W_MT, "W_MT", 
+                                ifelse(StaTerr%in%W_P, "W_P", 
+                                NA))))))))))
+
+pol.region<-as.data.frame.matrix(table(dat12$RptSrc==4,dat12$region))
+pol.region$NE_NE<-pol.region$NE_NE/sum(dat12$region=="NE_NE", na.rm=TRUE)
+pol.region$NE_MA<-pol.region$NE_MA/sum(dat12$region=="NE_MA", na.rm=TRUE)
+pol.region$MW_ENC<-pol.region$MW_ENC/sum(dat12$region=="MW_ENC", na.rm=TRUE)
+pol.region$MW_WNC<-pol.region$MW_WNC/sum(dat12$region=="MW_WNC", na.rm=TRUE)
+pol.region$S_SA<-pol.region$S_SA/sum(dat12$region=="S_SA", na.rm=TRUE)
+pol.region$S_ESC<-pol.region$S_ESC/sum(dat12$region=="S_ESC", na.rm=TRUE)
+pol.region$S_WSC<-pol.region$S_WSC/sum(dat12$region=="S_WSC", na.rm=TRUE)
+pol.region$W_MT<-pol.region$W_MT/sum(dat12$region=="W_MT", na.rm=TRUE)
+pol.region$W_P<-pol.region$W_P/sum(dat12$region=="W_P", na.rm=TRUE)
+
+row.names(pol.region)<-c("All", "police")
+
+print("police reports by census region")
+pander(pol.region)
+### correlation matrix for arrest data
+dat<-read.csv("R:/Project/NCANDS/ncands-csv/ncands-fc-merge.csv")
+dat<-dat%>%filter(gender=="all")%>%filter(offense=="all")%>%filter(race=="all")
+
+print("r(cases pc, arrests pc)")
+print(cor(dat$cases/dat$child.pop, dat$arrest/dat$adult.pop, use="complete"))
+print("r(cases pc, officers pc)")
+print(cor(dat$cases/dat$child.pop, dat$officers.pc, use="complete"))
+print("r(cases pc, state budgets pc)")
+print(cor(dat$cases/dat$child.pop, dat$pol.infl.pc, use="complete"))
+print("r(cases pc, child pov pc)")
+print(cor(dat$cases/dat$child.pop, dat$child.pov/dat$child.pop, use="complete"))
+print("r(cases pc, infmort)")
+print(cor(dat$cases/dat$child.pop, dat$infmort, use="complete"))
+
+print("non-rural reporting pc")
+print(mean(dat[dat$adult.pop>100000, "cases"]/dat[dat$adult.pop>100000, "child.pop"]), na.rm=TRUE)
+print("rural (less than 100k adult pop, more than 1k total reports, can't really use this)")
+print(mean(dat[dat$adult.pop<100000,"cases"]/dat[dat$adult.pop<100000,"child.pop"]), na.rm=TRUE)
+
+dat<-dat%>%mutate(arrest.rt=arrest/(adult.pop))
+within.dat<-dat
+within.dat<-within.dat%>%group_by(FIPS)%>%
+  mutate(mean.murder.pc=mean(murder.pc, na.rm=TRUE), mean.officers.pc=mean(officers.pc, na.rm=TRUE),
+   mean.infmort=mean(infmort, na.rm=TRUE), mean.wht.infmort=mean(wht.infmort, na.rm=TRUE), 
+   mean.nonwht.infmort=mean(nonwht.infmort, na.rm=TRUE),
+   mean.pop.density=mean(pop.density, na.rm=TRUE),mean.cases.pc=mean(cases/child.pop, na.rm=TRUE),
+   mean.pol.infl.pc=mean(pol.infl.pc, na.rm=TRUE))%>%ungroup
+within.dat<-within.dat%>%group_by(FIPS, gender, race, offense)%>%mutate(mean.arrest.rt=mean(arrest.rt, na.rm=TRUE))%>%ungroup
+within.dat<-within.dat%>%group_by(FIPS, race)%>%mutate(mean.child.pov.pc=mean(child.pov/child.pop, na.rm=TRUE),
+                                                       mean.pct.race.pop=mean(pct.race.pop))%>%ungroup
+within.dat<-within.dat%>%
+  mutate(diff.murder.pc=murder.pc-mean.murder.pc, 
+         diff.officers.pc=officers.pc-mean.officers.pc,
+        diff.infmort=infmort-mean.infmort, diff.wht.infmort=wht.infmort-mean.wht.infmort,
+        diff.nonwht.infmort=nonwht.infmort-mean.nonwht.infmort, 
+        diff.arrest.rt=arrest.rt-mean.arrest.rt, 
+        diff.child.pov.pc=(child.pov/child.pop)-mean.child.pov.pc,
+        diff.pop.density=pop.density-mean.pop.density,
+        diff.pol.infl.pc=pol.infl.pc-mean.pol.infl.pc,
+        diff.pct.race.pop=mean.pct.race.pop-pct.race.pop,
+    diff.cases.pc=mean.cases.pc-(cases/child.pop))
+print("arrest rt within unit")
+print(quantile(within.dat$diff.arrest.rt, c(0.05, 0.5, 0.95), na.rm=TRUE))
+print("officer rt within unit")
+print((quantile(within.dat$diff.officers.pc, c(0.05, 0.5, 0.95), na.rm=TRUE)))
+print("report rt within unit")
+print(quantile(within.dat$diff.cases.pc, c(0.05, 0.5, 0.95)))
+
+print(summary(dat))
+
+# 
+# #### TS PLOTS ON OUTCOMES
+# dat$fullname<-paste(dat$county, dat$state, dat$tot.pop)
+# library(ggplot2)
+# 
+# 
+# ### EDA ON UCR FOR COUNTY TYPES
+# eda<-dat
+# eda$name<-paste(eda$county, eda$state)
+# eda<-eda%>%filter((year>2003)&(year<2012))
+# small.pop<-eda%>%filter(race=="all")%>%filter(tot.pop<100000)
+# big.pop<-eda%>%filter(race=="all")%>%filter(tot.pop>100000)
+# 
+# big.RptPCTS<-ggplot(big.pop, aes(x=year, y=cases/child.pop))+geom_point()
+# FIPS.samp<-sample(big.pop$FIPS, 50)
+# big.Rpt.cnty<-ggplot(big.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=cases/child.pop))+
+#   geom_line()+facet_wrap(~name)
+# big.Arrest.cnty<-ggplot(big.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=arrest/tot.pop, col=offense))+
+#   geom_line()+facet_wrap(~name)
+# 
+# 
+# small.RptPCTS<-ggplot(small.pop, aes(x=year, y=cases/child.pop))+geom_point()
+# FIPS.samp<-sample(small.pop$FIPS, 50)
+# small.Rpt.cnty<-ggplot(small.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=cases/child.pop))+
+#   geom_line()+facet_wrap(~name)
+# small.Arrest.cnty<-ggplot(small.pop%>%filter(FIPS%in%FIPS.samp), aes(x=year, y=arrest/tot.pop, col=offense))+
+#   geom_line()+facet_wrap(~name)
+
+
+### NEED TO LOOP OVER INTO SMALLER FILES
+# all.out<-ggplot(dat, aes(x=year, y=pol.rpts.pc))+facet_wrap(~fullname)
+# ggsave(all.out, filename = "pol-rpts-allcountes.pdf", height=49, width=49)
+# blk.out<-ggplot(dat, aes(x=year, y=pol.blk.pc))+facet_wrap(~fullname)
+# ggsave(all.out, filename = "pol-blk-rpts-allcountes.pdf", height=49, width=49)
+# ai.out<-ggplot(dat, aes(x=year, y=pol.ai.pc))+facet_wrap(~fullname)
+# ggsave(all.out, filename = "pol-ai-rpts-allcountes.pdf", height=49, width=49)
+```

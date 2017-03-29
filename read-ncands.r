@@ -115,6 +115,13 @@ levels(county.test$RptSrc)<-c("socserv","med","menthlth","police","edu","daycare
 ### recode RptSrc into named cats for ease of interpretation
 ### Fill zeroes for combinations without observations in data
 county.test<-county.test%>%complete(FIPS, year, race, RptSrc, fill=list(cases=0))
+### then filter out counties that are de-identified
+z<-county.test%>%filter(RptSrc=="total"&race=="all")%>%filter(cases==0)%>%select(FIPS, year)
+z$drop<-TRUE
+ctest<-left_join(county.test, z)
+ctest<-ctest%>%filter(is.na(drop))
+
+### eliminate all rptsrc not police, all race not wht, all, black, ai
 ### write out
-write.csv(county.test, file="ncands-rpt-county-04-12.csv", row.names=FALSE)
+write.csv(ctest, file="ncands-rpt-county-04-12.csv", row.names=FALSE)
 q(save="no")

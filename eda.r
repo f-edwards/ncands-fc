@@ -1,5 +1,28 @@
-source("R:/Project/NCANDS/ncands-fc/read-main.r", verbose = TRUE)
-setwd("R:/Project/NCANDS/ncands-figures/")
+
+setwd("R:/Project/NCANDS/ncands-csv/")
+dat12<-read.dta("Child2012v1.dta", convert.factors = FALSE)
+
+
+### TO DO FOR PAPER
+### CROSSTABS ON POL RPT BY MALTYPE
+### CROSSTABS ON POL RPT BY RACE
+### CORRELATIONS BW POL RPT AND ARRESTS, OFFICERS PC, FUDNING
+### VARIANCE IN POL RPTS PC, POL RPTS AS PROPORTION OF TOT BY COUNTY
+
+#### PAPER DESCRIPTIVES
+library(xtable)
+
+###contingency table, police report by malt type
+pol.malt<-as.data.frame.matrix(table(dat12$RptSrc==4, dat12$ChMal1))
+### construct as proportions for all non-police, all police reports
+pol.malt[1,]<-pol.malt[1,]/sum(dat12$RptSrc!=4, na.rm=TRUE)                        
+pol.malt[2,]<-pol.malt[2,]/sum(dat12$RptSrc==4, na.rm=TRUE)
+row.names(pol.malt)<-c("All", "Police")
+names(pol.malt)<-c("phys.abuse", "neglect", "med.neglect",
+                   "sex.abuse", "psych.malt", "no.malt",
+                   "other", "missing")
+
+
 ### correlation matrix for arrest data
 pdf("arrest-cor-matrix.pdf")
 par(mfrow=c(4, 4))

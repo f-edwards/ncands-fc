@@ -10,9 +10,24 @@ library(shinystan)
 library(lme4)
 library(gridExtra)
 library(grid)
-load("R:/Project/NCANDS/ncands-fc/models-partial.RData")
 
+load("R:/Project/NCANDS/ncands-fc/models-within-norural.RData")
+setwd("R:/Project/NCANDS/ncands-fc/")
+#### beta plots for all models
+models<-ls()[grep("b.", ls())]
 
+model_out<-list()
+for(i in (models)){
+  temp<-get(i)
+  model_out[[i]]<-plot(temp, pars="beta")+ggtitle(i)
+}
+
+pdf("model-out-within.pdf")
+grid.arrange(model_out[[1]],model_out[[2]], model_out[[3]], model_out[[4]], model_out[[5]], model_out[[6]],
+             model_out[[7]],model_out[[8]],model_out[[9]],model_out[[10]],model_out[[11]],model_out[[12]],model_out[[13]],
+             model_out[[14]],model_out[[15]],model_out[[16]],model_out[[17]],model_out[[18]],model_out[[19]],
+             model_out[[20]],model_out[[21]],model_out[[22]],model_out[[23]],model_out[[24]])
+dev.off()
 ### compare model estimate medians
 #cbind(round(fixef(b.all.white),4), round(fixef(b.all.black),4), round(fixef(b.all.amind),4))
 
@@ -155,31 +170,31 @@ make.plot.dat<-function(data, model, label){
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$diff.arrest.rt[2]<-0.005
   newdata$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.10))
-  scen.arrest.diff<-posterior_predict(model, newdata=newdata[2,], offset=log(child.pop))
+  scen.arrest.diff<-posterior_predict(model, newdata=newdata[2,], offset=log(newdata$child.pop[2]))
   ### mean.arrest + 2sd
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$diff.arrest.rt[3]<-0.005
   newdata$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.90))
-  scen.arrest.mean<-posterior_predict(model, newdata=newdata[3,], offset=log(child.pop))
+  scen.arrest.mean<-posterior_predict(model, newdata=newdata[3,], offset=log(newdata$child.pop[3]))
   
   ### make officers pc low/high
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.10))
   newdata$diff.officers.pc<-0.0005
-  scen.off.low<-posterior_predict(model, newdata[4,], offset=log(child.pop))
+  scen.off.low<-posterior_predict(model, newdata[4,], offset=log(newdata$child.pop[4]))
   
   ### make officers pc low/high
   newdata<-bind_rows(newdata, newdata[1,])
   newdata$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.90))
   newdata$diff.officers.pc<-0.0005
-  scen.off.low<-posterior_predict(model, newdata[5,], offset=log(child.pop))
+  scen.off.high<-posterior_predict(model, newdata[5,], offset=log(newdata$child.pop[5]))
   
   plot.temp<-data.frame("model"=label, "name"="    -Median county", "lower"=quantile(scen.mean, 0.25), "median"=quantile(scen.mean, 0.5), "upper"=quantile(scen.mean, 0.75))
   plot.temp$name<-as.character(plot.temp$name)
   plot.temp[2,]<-c("model"=label,"  -Low avg arrest, large arrest increase", quantile(scen.arrest.diff, c(0.25, 0.5, 0.75)))
   plot.temp[3,]<-c("model"=label,"  -High avg arrest, large arrest increase", quantile(scen.arrest.mean, c(0.25, 0.5, 0.75)))
-  plot.temp[4,]<-c("model"=label,"  -Low avg police, large police increase", quantile(scen.arrest.diff, c(0.25, 0.5, 0.75)))
-  plot.temp[5,]<-c("model"=label,"  -High avg police, large police increase", quantile(scen.arrest.mean, c(0.25, 0.5, 0.75)))
+  plot.temp[4,]<-c("model"=label,"  -Low avg police, large police increase", quantile(scen.off.low, c(0.25, 0.5, 0.75)))
+  plot.temp[5,]<-c("model"=label,"  -High avg police, large police increase", quantile(scen.off.high, c(0.25, 0.5, 0.75)))
   
   return(plot.temp)
 }

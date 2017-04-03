@@ -207,6 +207,14 @@ runOffense.glmer<-function(data, model){
 #   scale(mean.child.pov.pc)+scale(mean.pct.race.pop)*race+
 #   (1|state/FIPS)+(1|n_obs)
 
+within.fe<-cases~arrest.rt+
+#+officers.pc+pol.infl.pc+
+  #I(child.pov/child.pop)+pop.density+year+murder.pc+infmort+
+    FIPS
+
+fe.all<-glm.nb(cases~arrest.rt+officers.pc+pol.infl.pc+I(child.pov/child.pop)+pop.density+year+murder.pc+infmort+FIPS, 
+               data=within.dat%>%filter(race=="ai")%>%filter(gender=="all")%>%filter(offense=="all"))
+
 within<-cases~scale(diff.arrest.rt)+
   scale(diff.officers.pc)+
   scale(diff.pol.infl.pc)+

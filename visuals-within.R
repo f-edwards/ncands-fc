@@ -584,6 +584,44 @@ pdf("within-predict.pdf", width=12, height=12)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
+
+forest<-ggplot(data=plot.dat%>%filter(offense=="All"))+
+  theme_bw()+
+  aes(x=median, xmin=lower, xmax=upper, y=yval)+
+  geom_point()+
+  geom_errorbarh(height=0.2)+
+  theme(
+    axis.text.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.major.y = element_blank(), 
+    panel.grid.minor.y = element_blank(), 
+    panel.border = element_blank() 
+  )+
+  xlab("Predicted reports by police, 50 percent credible interval")+
+  scale_y_reverse()+
+  facet_wrap(~offense)
+
+table_plot<-ggplot(plot.dat%>%filter(offense==("All")))+
+  theme_bw() + 
+  aes(y=yval)+
+  #geom_text(aes(label=gsub("\\s2", "", model), x=0), hjust=0)+
+  geom_text(aes(label=name, x=0), hjust=0)+
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  )+xlim(0,6)+
+  scale_y_reverse()+
+  facet_wrap(~offense, ncol=1)
+pdf("within-predict-only-all.pdf", width=8, height=8)
+grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
+dev.off()
+
 sink("arrest-plot-out.txt")
 plot.dat
 print(quantile(within.dat$diff.arrest.rt, c(0.1, 0.5 ,0.9), na.rm=TRUE))

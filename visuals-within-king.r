@@ -23,7 +23,7 @@ for(i in (models)){
   model_out[[i]]<-plot(temp, pars="beta")+ggtitle(i)
 }
 
-pdf("model-out-within.pdf", width=18, height=12)
+pdf("model-out-within-king.pdf", width=18, height=12)
 grid.arrange(model_out[[1]],model_out[[2]], model_out[[3]], model_out[[4]], model_out[[5]], model_out[[6]],
              model_out[[7]],model_out[[8]],model_out[[9]],model_out[[10]],model_out[[11]],model_out[[12]],model_out[[13]],
              model_out[[14]],model_out[[15]],model_out[[16]],model_out[[17]],model_out[[18]],model_out[[19]],
@@ -160,7 +160,7 @@ make.plot.dat.arrest<-function(data, model, label){
   ### for RE terms, uses King County Washington 2012
   ### data term must be filtered for appropriate data
   newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), mean(as.numeric(x), na.rm=TRUE), NA)))
-  newdata$FIPS<-"53033";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
+  newdata$FIPS<-"0";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
   newdata$race<-"all";newdata$gender<-"all";newdata$offense<-"all";newdata[which(is.na(newdata))]<-0
   newdata$child.pop<-100000
   newdata$n_obs<-0
@@ -222,7 +222,7 @@ make.plot.dat.officer<-function(data, model, label){
   ### for RE terms, uses King County Washington 2012
   ### data term must be filtered for appropriate data
   newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), mean(as.numeric(x), na.rm=TRUE), NA)))
-  newdata$FIPS<-"0";newdata$year<-2012;newdata$stname<-"0";newdata$state<-"0"
+  newdata$FIPS<-"53033";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
   newdata$race<-"all";newdata$gender<-"all";newdata$offense<-"all";newdata[which(is.na(newdata))]<-0
   newdata$child.pop<-100000
   newdata$n_obs<-0
@@ -580,7 +580,7 @@ table_plot<-ggplot(plot.dat%>%filter(offense%in%c("All", "Violent")))+
   )+xlim(0,6)+
   scale_y_reverse()+
   facet_wrap(~offense, ncol=1)
-pdf("within-predict.pdf", width=12, height=12)
+pdf("within-predict-king.pdf", width=12, height=12)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
@@ -618,7 +618,7 @@ table_plot<-ggplot(plot.dat%>%filter(offense==("All")))+
   )+xlim(0,6)+
   scale_y_reverse()+
   facet_wrap(~offense, ncol=1)
-pdf("within-predict-only-all.pdf", width=8, height=8)
+pdf("within-predict-only-all-king.pdf", width=8, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
@@ -706,7 +706,7 @@ table_plot<-ggplot(plot.dat)+
     strip.text.x = element_blank()
   )+xlim(0,6)+
   scale_y_reverse()
-pdf("within-predict-officer.pdf", width=8, height=8)
+pdf("within-predict-officer-king.pdf", width=8, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 

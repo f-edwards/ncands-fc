@@ -50,16 +50,6 @@ rm(ucr)
 gc()
 names(ucr.dat)[which(names(ucr.dat)=="ORI")]<-"ORI7"
 
-### some negative reported values plus coded missingness
-ucr.dat[ucr.dat==999998]<-NA
-ucr.dat[ucr.dat<0]<-NA
-
-### drop report==3 "not reported"
-ucr.dat<-ucr.dat%>%filter(REPORT!=3)
-### drop counties with no race data
-ucr.dat<-ucr.dat%>%filter(ADJUST<4)
-
-
 ### load UCR crosswalk to convert into FIPS, ORI in UCR, ORI7 in crosswalk should match
 crosswalk<-read.delim("35158-0001-Data.tsv", sep="\t", colClasses=c(rep(NA, 3), rep("character", 3), rep(NA, 40)),
                       stringsAsFactors = FALSE)
@@ -76,8 +66,17 @@ gambling.codes<-as.character(191:193)
 ucr.fips<-ucr.fips%>%filter((!(OFFENSE%in%drug.codes))&
                    (!(OFFENSE%in%gambling.codes)))
 
-ucr.fips<-ucr.fips%>%filter(CONTENTS==2)
-#rm(ucr.dat)
+### mark NA those with only agency flag
+ucr.fips[which(ucr.fips$CONTENTS==1), which(names(ucr.fips)=="M0_9"):ncol(ucr.fips)]<-NA
+### some negative reported values plus coded missingness
+ucr.fips[ucr.fips==999998]<-NA
+ucr.fips[ucr.fips<0]<-NA
+### switch from drop to place NA - want to include NA in county sums if appropriate
+ucr.fips[ucr.fips$REPORT==3,which(names(ucr.fips)=="M0_9"):ncol(ucr.fips)]<-NA
+### report missing as counties with no race data
+ucr.fips[ucr.fips$ADJUST>3,which(names(ucr.fips)=="M0_9"):ncol(ucr.fips)]<-NA
+
+#### check for negative values in arrest counts - sub NA
 
 ####Create county-level counts of arrest by offense type, want total arrest, violent arrest, fam viol arrest, 
 ### Age is more inclusive, many more arrests counted, appears race underrreported
@@ -92,6 +91,9 @@ ucr.fips$total.age<-apply(ucr.fips[,age.index[1]:age.index[2]], 1, sum)
 # test<-ucr.fips%>%filter(FIPS=="04013")
 # View(test[,c(17, 22:66, 124)])
 
+
+####FOR LATER - COULD MAKE AGENCY COUNTS FOR DATA IN BOTH UCR AND CROSSWALK TO CHECK FOR COMPLETENESS
+
 viol.codes<-c("011", "012", "020", "030", "040", "080")
 prop.codes<-c("050", "060", "070", "100", "110", "120", "130")
 drug.codes<-c("18")
@@ -103,7 +105,11 @@ ucr.fips$offense<-ifelse(ucr.fips$OFFENSE%in%viol.codes, "viol",
                                        ifelse(ucr.fips$OFFENSE%in%qol.codes, "qol", "other"
                                        ))))
 
-### rework into long format
+### drop other and property
+ucr.fips<-ucr.fips%>%filter(!(offense%in%c("prop", "other")))
+
+
+### rework into wide format
 ucr.fips<-ucr.fips%>%rename(wht=AW, blk=AB, ai=AI, aa=AA, lat=AH)
 
 ucr.county.offense<-ucr.fips%>%group_by(FIPS, offense, YEAR)%>%
@@ -121,12 +127,18 @@ ucr.tot<-ucr.fips%>%group_by(FIPS, YEAR)%>%
             ai=sum(ai),
             aa=sum(aa),
             lat=sum(lat))%>%
-              mutate(offense="all")
+              mutate(offense="arrest")
 
 ucr.county.offense<-full_join(ucr.county.offense, ucr.tot)
+ucr.county.offense<-ucr.county.offense%>%dplyr::select(-aa, -lat)
 
+
+### gather to long, join race-offense column, spread for wide
 ucr.long<-gather(ucr.county.offense, race, arrest, -c(FIPS, YEAR, offense))
-### add agency count to file, to check weird reporting patterns
+ucr.long<-ucr.long%>%unite(race.off, c(offense, race), sep=".")
+ucr.wide<-spread(ucr.long, race.off, arrest, fill=NA)
+
+### by gender
 
 f.index<-c(which(names(ucr.fips)=="F18"), which(names(ucr.fips)=="F65"))
 m.index<-c(which(names(ucr.fips)=="M18"), which(names(ucr.fips)=="M65"))
@@ -137,17 +149,15 @@ ucr.county.gender<-ucr.fips%>%group_by(FIPS, offense, YEAR)%>%
   summarise(female=sum(female), male=sum(male))
 
 ucr.county.gender.all<-ucr.fips%>%group_by(FIPS, YEAR)%>%
-  summarise(female=sum(female), male=sum(male))%>%mutate(offense="all")
+  summarise(female=sum(female), male=sum(male))%>%mutate(offense="arrest")
 
 ucr.county.gender<-full_join(ucr.county.gender, ucr.county.gender.all)
 
-ucr.long.gender<-gather(ucr.county.gender, gender, arrest, -c(FIPS, YEAR, offense))%>%mutate(race="all")
+ucr.long.gender<-gather(ucr.county.gender, gender, arrest, -c(FIPS, YEAR, offense))
+ucr.long.gender<-ucr.long.gender%>%unite(gender.off, c(offense, gender), sep=".")
+ucr.wide.gender<-spread(ucr.long.gender, gender.off, arrest, fill=NA)
 
-ucr.long$gender<-"all"
-
-ucr.agencyfile<-full_join(ucr.long.gender, ucr.long)
-
-
+ucr.agencyfile<-full_join(ucr.wide.gender, ucr.wide)
 
 # 
 # ### create wide frame for UCR
@@ -181,6 +191,8 @@ leoka.dat<-leoka.dat%>%mutate(officers=V12+V15)%>%dplyr::select(ORI7, YEAR, offi
 leoka.dat<-left_join(leoka.dat, crosswalk)%>%dplyr::select(ORI7, YEAR, officers, FIPS)
 
 leoka.county<-leoka.dat%>%group_by(FIPS, YEAR)%>%summarise(officers=sum(officers))
+
+# Could proxy measurement error with total age / county file to get error variance as pct of total variance
 # 
 # # setwd("R:/Project/NCANDS/ncands-csv/")
 # # write.csv(ucr.out, file="ucr-county-offense-race.csv", row.names=FALSE)
@@ -348,20 +360,21 @@ c.offense.ucr<-c.offense.ucr%>%dplyr::select(FIPS, YEAR, MURDER_mav)%>%
 ####################################################
 #### MERGE leoka.county, c.offense.ucr, ucr.agenycfile
 
-ucr.agencyfile$FIPS<-factor(ucr.agencyfile$FIPS); ucr.agencyfile$offense<-factor(ucr.agencyfile$offense)
-ucr.agencyfile$race<-factor(ucr.agencyfile$race); ucr.agencyfile$gender<-factor(ucr.agencyfile$gender)
-ucr.agencyfile$YEAR<-factor(ucr.agencyfile$YEAR)
-ucr.agencyfile<-as.data.frame(ucr.agencyfile)
-
-### fill in missing combinations
-ucr.agencyfile<-ucr.agencyfile%>%complete(FIPS, YEAR, race, offense)
-ucr.agencyfile<-ucr.agencyfile%>%complete(FIPS, YEAR, gender, offense)
-
-### drop nonsense NA combos
-ucr.agencyfile<-ucr.agencyfile%>%filter(!is.na(gender))%>%filter(!is.na(race))
-
-ucr.agencyfile$FIPS<-as.character(ucr.agencyfile$FIPS)
-ucr.agencyfile$YEAR<-as.numeric(ucr.agencyfile$YEAR)
+# ### this is to complete long file - not needed for wide
+# ucr.agencyfile$FIPS<-factor(ucr.agencyfile$FIPS); ucr.agencyfile$offense<-factor(ucr.agencyfile$offense)
+# ucr.agencyfile$race<-factor(ucr.agencyfile$race); ucr.agencyfile$gender<-factor(ucr.agencyfile$gender)
+# ucr.agencyfile$YEAR<-factor(ucr.agencyfile$YEAR)
+# ucr.agencyfile<-as.data.frame(ucr.agencyfile)
+# 
+# ### fill in missing combinations
+# ucr.agencyfile<-ucr.agencyfile%>%complete(FIPS, YEAR, race, offense)
+# ucr.agencyfile<-ucr.agencyfile%>%complete(FIPS, YEAR, gender, offense)
+# 
+# ### drop nonsense NA combos
+# ucr.agencyfile<-ucr.agencyfile%>%filter(!is.na(gender))%>%filter(!is.na(race))
+# 
+# ucr.agencyfile$FIPS<-as.character(ucr.agencyfile$FIPS)
+# ucr.agencyfile$YEAR<-as.numeric(ucr.agencyfile$YEAR)
 
 c.offense.ucr<-c.offense.ucr%>%rename(YEAR=year)
 
@@ -370,8 +383,5 @@ length(unique(leoka.county$FIPS)); length(unique(c.offense.ucr$FIPS)); length(un
 ucr.out<-left_join(ucr.agencyfile, leoka.county)
 ucr.out<-left_join(ucr.out, c.offense.ucr)
 
-write.csv(ucr.out, "R:/Project/NCANDS/ncands-csv/ucr-gender-plus.csv", row.names=FALSE)
+write.csv(ucr.out, "R:/Project/NCANDS/ncands-csv/ucr-wide.csv", row.names=FALSE)
 
-##quality test
-table(ucr.out$offense, ucr.out$race)
-table(ucr.out$offense, ucr.out$gender)

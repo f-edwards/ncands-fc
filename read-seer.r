@@ -44,18 +44,36 @@ seer$race<-ifelse(seer$race==2, "blk",
                   ifelse(seer$race==1, "wht",
                   ifelse(seer$race==4, "aa", seer$race)))))
 seer<-seer%>%dplyr::select(-c(state, state.fips, cnty.fips, registry, latino, age))
+seer<-seer%>%filter(year>1999)
 
 
 seer.tot<-seer%>%group_by(year, FIPS, child)%>%summarise(pop=sum(pop))%>%mutate(race="all", sex=0)
-seer.race<-seer%>%group_by(year, FIPS, child, race)%>%summarise(pop=sum(pop))%>%mutate(sex=0)
+seer.tot<-spread(seer.tot, child, pop)%>%rename(adult=`FALSE`, child=`TRUE`)%>%dplyr::select(-race, -sex)
+
+
+seer.race<-seer%>%filter(race%in%c("ai", "blk", "wht"))%>%
+  group_by(year, FIPS, child, race)%>%summarise(pop=sum(pop))
+
+seer.race.adult<-seer.race%>%filter(child==FALSE)%>%spread(race, pop, sep=".")%>%
+  ungroup%>%dplyr::select(-child)
+names(seer.race.adult)[grep("race.", names(seer.race.adult))]<-
+  paste("adult.", substr(names(seer.race.adult)[grep("race.", names(seer.race.adult))], 6, 
+  nchar(names(seer.race.adult)[grep("race.", names(seer.race.adult))])), sep="")
+
+seer.race.child<-seer.race%>%filter(child==TRUE)%>%spread(race, pop, sep=".")%>%
+  ungroup%>%dplyr::select(-child)
+names(seer.race.child)[grep("race.", names(seer.race.child))]<-
+  paste("child.", substr(names(seer.race.child)[grep("race.", names(seer.race.child))], 6, 
+  nchar(names(seer.race.child)[grep("race.", names(seer.race.child))])), sep="")
+
+
 seer.gender<-seer%>%group_by(year, FIPS, child, sex)%>%summarise(pop=sum(pop))%>%
   mutate(race="all")
-seer.out<-full_join(full_join(seer.tot, seer.race), seer.gender)
-seer.child<-seer.out%>%
-  mutate(child.pop=child*pop)%>%filter(child==TRUE)%>%dplyr::select(-c(pop, child))%>%
-  filter(sex==0)%>%select(-sex)
-seer.tot<-seer.out%>%filter(child==FALSE)%>%group_by(year, FIPS,race, sex)%>%summarise(adult.pop=sum(pop))
+seer.gender<-seer.gender%>%ungroup%>%filter(child==FALSE)%>%dplyr::select(-child, -race)%>%
+  spread(sex, pop, sep="")%>%rename(men=sex1, women=sex2)
 
-seer.all<-left_join(seer.tot, seer.child)
+seer.out<-full_join(full_join(full_join(
+  seer.tot, seer.gender), seer.race.adult), seer.race.child)
 
-write.csv(seer.all, file="seer-pop.csv", row.names=FALSE)
+
+write.csv(seer.out, file="seer-pop.csv", row.names=FALSE)

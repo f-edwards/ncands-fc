@@ -20,34 +20,64 @@ ncands.county<-function(dat){
   
   dat$race[is.na(dat$race)]<-"missing"
   
-  total<-dat%>%group_by(RptFIPS, SubYr, race)%>%
-    count(RptSrc)%>%rename(cases=n)
+  ###################### MAKE COUNTS FOR WIDE (county-year)
+  ### RPTSRC==4 is police
+  #count all police reports by race, set up wide, filter unused groups
   
-  totalNA<-total%>%group_by(RptFIPS, SubYr, race)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
-    summarise(missing.rpt=sum(cases))
+    police.race<-dat%>%filter(race%in%c("blk", "ai", "wht", "missing"))%>%
+      group_by(RptFIPS, SubYr, race)%>%filter(RptSrc==4)%>%
+      count()%>%rename(cases=n)
+    police.race<-spread(police.race, race, cases, fill=0, sep=".")
+    names(police.race)[3:ncol(police.race)]<-paste("polrpt.", 
+      substr(names(police.race)[3:ncol(police.race)], 6, nchar(names(police.race)[3:ncol(police.race)])), sep="")
+    
+  #count all reports by race, set up wide
   
-  total.race<-dat%>%group_by(RptFIPS, SubYr)%>%
-    count(RptSrc)%>%rename(cases=n)%>%mutate(race="all")
-  totalNA.race<-total%>%group_by(RptFIPS, SubYr, RptSrc)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
-    summarise(missing.rpt=sum(cases))%>%mutate(race="all")%>%select(-RptSrc)
-  total.race<-left_join(total.race, totalNA.race)
-  ###create rptsrc==98 for all reports
-  total.rptsrc<-dat%>%group_by(RptFIPS, SubYr)%>%
-    summarise(cases=n())%>%mutate(RptSrc=98)%>%mutate(race="all")
-  totalNA.rptsrc<-total%>%group_by(RptFIPS, SubYr)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
-    summarise(missing.rpt=sum(cases))%>%mutate(RptSrc=98)%>%mutate(race="all")
-  total.rptsrc<-left_join(total.rptsrc, totalNA.rptsrc)
-  all.cat<-bind_rows(total.rptsrc, total.race)
+    total.race<-dat%>%filter(race%in%c("blk", "ai", "wht", "missing"))%>%
+      group_by(RptFIPS, SubYr, race)%>%count()%>%rename(cases=n)
+    total.race<-spread(total.race, race, cases, fill=0, sep=".")
+    names(total.race)[3:ncol(total.race)]<-paste("totalrpt.", 
+      substr(names(total.race)[3:ncol(total.race)], 6, nchar(names(total.race)[3:ncol(total.race)])), sep="")
+    
+  #count all missing reports by race
   
-  out<-left_join(total, totalNA)
-  out<-bind_rows(out, all.cat)
+    totalNArace<-dat%>%filter(race%in%c("blk", "ai", "wht", "missing"))%>%
+      group_by(RptFIPS, SubYr, race)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
+      count()%>%rename(cases=n)
+    totalNArace<-spread(totalNArace, race, cases, fill=0, sep=".")
+    names(totalNArace)[3:ncol(totalNArace)]<-paste("NArpt.", 
+      substr(names(totalNArace)[3:ncol(totalNArace)], 6, nchar(names(totalNArace)[3:ncol(totalNArace)])), sep="")
+
+  #count all police reports
+    
+    police<-dat%>%group_by(RptFIPS, SubYr)%>%filter(RptSrc==4)%>%
+      count()%>%rename(polrpt=n)
+    
+  #count all reports
+    
+    total<-dat%>%group_by(RptFIPS, SubYr)%>%count()%>%rename(totalrpt=n)
   
-  out$missing.rpt[is.na(out$missing.rpt)]<-0
-  ### filter out missing RptSrc, now tallied in missing.rpt
-  out<-out%>%filter(!((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0)))
-  ### rather than add total cases column, can group_by(RptFIPS, SubYr)%>%summarise(cases=sum(cases))
-  ### in model data
+  #count all missing reports
+  
+    totalNA<-dat%>%group_by(RptFIPS, SubYr)%>%filter((RptSrc==99)|(is.na(RptSrc))|(RptSrc==0))%>%
+    count()%>%rename(NArpt=n)
+  
+  out<-full_join(full_join(full_join(full_join(full_join(
+    police, total),totalNA),police.race),total.race),totalNArace)
+  
+  ### missings are true zeroes - not in data. can use totlrpt.missing, polrpt.missing to upper bound
+  out[is.na(out)]<-0  
   out<-out%>%rename(FIPS=RptFIPS, year=SubYr)
+
+  ###FILTER OUT DEIDENTIFIED, PUERTO RICO
+  out<-out%>%filter(substr(FIPS, 3, 5)!="000")%>%filter(substr(FIPS, 3, 5)!="999")%>%
+  filter(substr(FIPS, 1, 2)!="NA")
+  out<-out%>%filter(substr(FIPS, 1, 2)!="72")
+  ###some missing FIPS codes in county file I made - coming between puerto rico and death de-identified
+  out<-out%>%filter(FIPS!="")
+  
+  ### return wide format FIPS-year ncands pol and total rpt counts by race
+
   return(out)
 }
 
@@ -103,25 +133,21 @@ gc()
 
 
 
-### FILTER de-identified state (fatalities) and Puerto Rico
-county.test<-county.out%>%ungroup()%>%
-  mutate(RptSrc=as.character(RptSrc))%>%as.data.frame()
-county.test$RptSrc<-factor(county.test$RptSrc, 
-                           levels=as.character(c(1:13, 88, 98)))
-levels(county.test$RptSrc)<-c("socserv","med","menthlth","police","edu","daycare","fostercare",
-                              "victim","parent","relative","neighbor","perp","anon","other",
-                              "total")
+# ### FILTER de-identified state (fatalities) and Puerto Rico
+# county.test<-county.out%>%ungroup()%>%
+#   mutate(RptSrc=as.character(RptSrc))%>%as.data.frame()
+# # 
+# ### recode RptSrc into named cats for ease of interpretation
+# ### Fill zeroes for combinations without observations in data
+# county.test<-county.test%>%complete(FIPS, year, race, RptSrc, fill=list(cases=0))
+# ### then filter out counties that are de-identified
+# z<-county.test%>%filter(RptSrc=="total"&race=="all")%>%filter(cases==0)%>%select(FIPS, year)
+# z$drop<-TRUE
+# ctest<-left_join(county.test, z)
+# ctest<-ctest%>%filter(is.na(drop))
 
-### recode RptSrc into named cats for ease of interpretation
-### Fill zeroes for combinations without observations in data
-county.test<-county.test%>%complete(FIPS, year, race, RptSrc, fill=list(cases=0))
-### then filter out counties that are de-identified
-z<-county.test%>%filter(RptSrc=="total"&race=="all")%>%filter(cases==0)%>%select(FIPS, year)
-z$drop<-TRUE
-ctest<-left_join(county.test, z)
-ctest<-ctest%>%filter(is.na(drop))
 
-### eliminate all rptsrc not police, all race not wht, all, black, ai
+
 ### write out
-write.csv(ctest, file="ncands-rpt-county-04-12.csv", row.names=FALSE)
+write.csv(county.out, file="ncands-wide-04-12.csv", row.names=FALSE)
 q(save="no")

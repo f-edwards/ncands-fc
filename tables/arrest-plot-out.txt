@@ -1,166 +1,126 @@
-                model                      name  lower median   upper order
-1                <NA>                 Full pop.     NA     NA      NA  <NA>
-2           Full pop.            -Median county 362.00  458.0  596.00     1
-3           Full pop.    -High change in arrest 354.00  449.0  587.00     1
-4           Full pop.      -High average arrest 411.75  526.0  679.00     1
-17               <NA>          African American     NA     NA      NA  <NA>
-5    African American            -Median county 530.00  743.5 1024.00     2
-6    African American    -High change in arrest 519.75  733.5 1000.00     2
-7    African American      -High average arrest 605.00  858.0 1183.75     2
-18               <NA>                     White     NA     NA      NA  <NA>
-8               White            -Median county 268.00  366.5  499.00     3
-9               White    -High change in arrest 267.75  368.0  498.75     3
-10              White      -High average arrest 296.00  408.5  555.50     3
-19               <NA>                       Men     NA     NA      NA  <NA>
-11                Men            -Median county 368.75  493.5  651.00     4
-12                Men    -High change in arrest 365.00  484.0  636.00     4
-13                Men      -High average arrest 402.75  542.0  716.00     4
-110              <NA>                     Women     NA     NA      NA  <NA>
-14              Women            -Median county 277.75  385.0  520.25     5
-15              Women    -High change in arrest 269.00  371.0  500.25     5
-16              Women      -High average arrest 324.00  449.5  615.00     5
-111              <NA>                 Full pop.     NA     NA      NA  <NA>
-21          Full pop.            -Median county 360.00  462.0  591.25     1
-31          Full pop.    -High change in arrest 358.00  457.0  581.25     1
-41          Full pop.      -High average arrest 403.00  523.0  677.25     1
-171              <NA>          African American     NA     NA      NA  <NA>
-51   African American            -Median county 568.75  785.0 1071.25     2
-61   African American    -High change in arrest 576.75  802.0 1095.50     2
-71   African American      -High average arrest 656.50  910.0 1247.25     2
-181              <NA>                     White     NA     NA      NA  <NA>
-81              White            -Median county 247.75  344.5  477.25     4
-91              White    -High change in arrest 250.00  346.5  476.00     4
-101             White      -High average arrest 259.00  357.0  488.00     4
-191              <NA>                       Men     NA     NA      NA  <NA>
-112               Men            -Median county 376.00  500.0  664.00     5
-121               Men    -High change in arrest 380.00  506.0  672.00     5
-131               Men      -High average arrest 424.00  565.5  746.25     5
-1101             <NA>                     Women     NA     NA      NA  <NA>
-141             Women            -Median county 246.00  340.0  464.00     6
-151             Women    -High change in arrest 249.00  344.0  470.00     6
-161             Women      -High average arrest 294.00  408.5  557.00     6
-113              <NA>                 Full pop.     NA     NA      NA  <NA>
-22          Full pop.            -Median county 346.75  452.0  587.00     1
-32          Full pop.    -High change in arrest 346.75  452.0  588.00     1
-42          Full pop.      -High average arrest 356.75  470.5  617.00     1
-172              <NA>          African American     NA     NA      NA  <NA>
-52   African American            -Median county 552.75  773.5 1060.00     2
-62   African American    -High change in arrest 555.75  776.5 1064.00     2
-72   African American      -High average arrest 570.00  802.0 1102.25     2
-182              <NA>                     White     NA     NA      NA  <NA>
-82              White            -Median county 260.00  364.0  489.25     4
-92              White    -High change in arrest 266.00  364.5  492.00     4
-102             White      -High average arrest 277.00  381.0  514.00     4
-192              <NA>                       Men     NA     NA      NA  <NA>
-114               Men            -Median county 344.00  461.0  616.00     5
-122               Men    -High change in arrest 348.00  469.0  623.00     5
-132               Men      -High average arrest 342.00  463.0  619.00     5
-1102             <NA>                     Women     NA     NA      NA  <NA>
-142             Women            -Median county 262.75  361.0  508.00     6
-152             Women    -High change in arrest 264.75  362.5  509.00     6
-162             Women      -High average arrest 278.75  378.0  539.25     6
-115              <NA>                 Full pop.     NA     NA      NA  <NA>
-23          Full pop.            -Median county 368.00  473.0  600.00     1
-33          Full pop.    -High change in arrest 376.00  487.0  623.00     1
-43          Full pop.      -High average arrest 381.75  497.0  634.00     1
-173              <NA>          African American     NA     NA      NA  <NA>
-53   African American            -Median county 591.50  822.5 1158.25     2
-63   African American    -High change in arrest 595.50  818.0 1166.50     2
-73   African American      -High average arrest 662.75  919.0 1290.50     2
-183              <NA>                     White     NA     NA      NA  <NA>
-83              White            -Median county 260.00  360.5  497.25     4
-93              White    -High change in arrest 271.75  371.0  514.50     4
-103             White      -High average arrest 295.00  404.0  563.00     4
-193              <NA>                       Men     NA     NA      NA  <NA>
-116               Men            -Median county 371.75  481.0  636.00     5
-123               Men    -High change in arrest 380.00  498.5  650.00     5
-133               Men      -High average arrest 388.00  514.0  672.25     5
-1103             <NA>                     Women     NA     NA      NA  <NA>
-143             Women            -Median county 283.00  383.5  515.00     6
-153             Women    -High change in arrest 290.00  399.5  530.00     6
-163             Women      -High average arrest 303.75  416.0  556.00     6
-             offense yval
-1                All    1
-2                All    2
-3                All    3
-4                All    4
-17               All    5
-5                All    6
-6                All    7
-7                All    8
-18               All    9
-8                All   10
-9                All   11
-10               All   12
-19               All   13
-11               All   14
-12               All   15
-13               All   16
-110              All   17
-14               All   18
-15               All   19
-16               All   20
-111          Violent    1
-21           Violent    2
-31           Violent    3
-41           Violent    4
-171          Violent    5
-51           Violent    6
-61           Violent    7
-71           Violent    8
-181          Violent    9
-81           Violent   10
-91           Violent   11
-101          Violent   12
-191          Violent   13
-112          Violent   14
-121          Violent   15
-131          Violent   16
-1101         Violent   17
-141          Violent   18
-151          Violent   19
-161          Violent   20
-113             Drug    1
-22              Drug    2
-32              Drug    3
-42              Drug    4
-172             Drug    5
-52              Drug    6
-62              Drug    7
-72              Drug    8
-182             Drug    9
-82              Drug   10
-92              Drug   11
-102             Drug   12
-192             Drug   13
-114             Drug   14
-122             Drug   15
-132             Drug   16
-1102            Drug   17
-142             Drug   18
-152             Drug   19
-162             Drug   20
-115  Quality of Life    1
-23   Quality of Life    2
-33   Quality of Life    3
-43   Quality of Life    4
-173  Quality of Life    5
-53   Quality of Life    6
-63   Quality of Life    7
-73   Quality of Life    8
-183  Quality of Life    9
-83   Quality of Life   10
-93   Quality of Life   11
-103  Quality of Life   12
-193  Quality of Life   13
-116  Quality of Life   14
-123  Quality of Life   15
-133  Quality of Life   16
-1103 Quality of Life   17
-143  Quality of Life   18
-153  Quality of Life   19
-163  Quality of Life   20
-         10%          50%          90% 
--0.002947253  0.000000000  0.003045987 
+               model                      name      lower      median     upper order
+1               <NA>                 Full pop.         NA          NA        NA  <NA>
+2          Full pop.    -High change in arrest -19.089174   0.9090083  25.45223     1
+3          Full pop.         -High mean arrest  32.724298  74.5386783 144.98682     1
+12              <NA>          African American         NA          NA        NA  <NA>
+4   African American    -High change in arrest -88.694418 -11.8259224  59.12961     2
+5   African American         -High mean arrest  29.564806 118.2592242 266.08325     2
+13              <NA>                     White         NA          NA        NA  <NA>
+6              White    -High change in arrest -32.117381  -1.6903885  27.04622     3
+7              White         -High mean arrest  59.163596 126.7791338 262.01021     3
+14              <NA>                       Men         NA          NA        NA  <NA>
+8                Men    -High change in arrest -19.199649   5.4856140  30.17088     4
+9                Men         -High mean arrest  29.942310  71.3129817 141.71169     4
+15              <NA>                     Women         NA          NA        NA  <NA>
+10             Women    -High change in arrest -27.121096  -3.6161461  17.17669     5
+11             Women         -High mean arrest  56.954301 121.1408941 216.96877     5
+16              <NA>                 Full pop.         NA          NA        NA  <NA>
+21         Full pop.    -High change in arrest -12.788249   9.1344639  32.88407     1
+31         Full pop.         -High mean arrest  46.585766  94.9984243 184.51617     1
+121             <NA>          African American         NA          NA        NA  <NA>
+41  African American    -High change in arrest -59.424768  11.8849536  89.13715     2
+51  African American         -High mean arrest 106.964583 228.7853577 429.34395     2
+131             <NA>                     White         NA          NA        NA  <NA>
+61             White    -High change in arrest -28.774299   0.0000000  30.46691     4
+71             White         -High mean arrest  18.618664  57.5485989 125.25283     4
+141             <NA>                       Men         NA          NA        NA  <NA>
+81               Men    -High change in arrest  -9.087439  11.8136711  39.07599     5
+91               Men         -High mean arrest  57.250868 112.6842478 219.91603     5
+151             <NA>                     Women         NA          NA        NA  <NA>
+101            Women    -High change in arrest  -9.993640  11.8106659  38.15754     6
+111            Women         -High mean arrest  59.053330 119.0151722 225.31117     6
+17              <NA>                 Full pop.         NA          NA        NA  <NA>
+22         Full pop.    -High change in arrest  -3.634976  18.6292506  49.98092     1
+32         Full pop.         -High mean arrest   8.860253  35.8953854  82.69570     1
+122             <NA>          African American         NA          NA        NA  <NA>
+42  African American    -High change in arrest -76.868496   0.0000000  70.95553     2
+52  African American         -High mean arrest -23.651845  47.3036897 153.73699     2
+132             <NA>                     White         NA          NA        NA  <NA>
+62             White    -High change in arrest -28.736604   0.0000000  33.80777     4
+72             White         -High mean arrest  38.878934  87.9001995 187.63312     4
+142             <NA>                       Men         NA          NA        NA  <NA>
+82               Men    -High change in arrest  -5.485614  16.4568419  42.97064     5
+92               Men         -High mean arrest  -4.571345  21.9424559  59.42748     5
+152             <NA>                     Women         NA          NA        NA  <NA>
+102            Women    -High change in arrest  -4.519039  17.1723471  46.99800     6
+112            Women         -High mean arrest  33.440886  76.8236581 154.77708     6
+18              <NA>                 Full pop.         NA          NA        NA  <NA>
+23         Full pop.    -High change in arrest  -8.221017  12.7882494  40.19164     1
+33         Full pop.         -High mean arrest  36.537856  80.8400053 160.76656     1
+123             <NA>          African American         NA          NA        NA  <NA>
+43  African American    -High change in arrest -65.367245   5.9424768  71.30972     2
+53  African American         -High mean arrest  29.712384 106.9645828 255.52650     2
+133             <NA>                     White         NA          NA        NA  <NA>
+63             White    -High change in arrest -16.926059  10.1556351  45.70036     4
+73             White         -High mean arrest  50.355024 113.4045920 231.88700     4
+143             <NA>                       Men         NA          NA        NA  <NA>
+83               Men    -High change in arrest  -7.269951  13.6311590  40.89348     5
+93               Men         -High mean arrest  14.312717  49.9809164 109.95802     5
+153             <NA>                     Women         NA          NA        NA  <NA>
+103            Women    -High change in arrest -15.444717   7.2681021  30.88943     6
+113            Women         -High mean arrest  37.021895  79.9491233 148.08758     6
+            offense yval
+1               All    1
+2               All    2
+3               All    3
+12              All    4
+4               All    5
+5               All    6
+13              All    7
+6               All    8
+7               All    9
+14              All   10
+8               All   11
+9               All   12
+15              All   13
+10              All   14
+11              All   15
+16          Violent    1
+21          Violent    2
+31          Violent    3
+121         Violent    4
+41          Violent    5
+51          Violent    6
+131         Violent    7
+61          Violent    8
+71          Violent    9
+141         Violent   10
+81          Violent   11
+91          Violent   12
+151         Violent   13
+101         Violent   14
+111         Violent   15
+17             Drug    1
+22             Drug    2
+32             Drug    3
+122            Drug    4
+42             Drug    5
+52             Drug    6
+132            Drug    7
+62             Drug    8
+72             Drug    9
+142            Drug   10
+82             Drug   11
+92             Drug   12
+152            Drug   13
+102            Drug   14
+112            Drug   15
+18  Quality of Life    1
+23  Quality of Life    2
+33  Quality of Life    3
+123 Quality of Life    4
+43  Quality of Life    5
+53  Quality of Life    6
+133 Quality of Life    7
+63  Quality of Life    8
+73  Quality of Life    9
+143 Quality of Life   10
+83  Quality of Life   11
+93  Quality of Life   12
+153 Quality of Life   13
+103 Quality of Life   14
+113 Quality of Life   15
+          10%           50%           90% 
+-3.095835e-03 -5.091043e-06  3.170113e-03 
         10%         50%         90% 
-0.001345266 0.008343398 0.053796947 
+0.001542034 0.008951769 0.051673853 

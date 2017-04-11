@@ -22,11 +22,11 @@ ucr<-read.csv("ucr-gender-plus.csv", colClasses=c("character", "numeric", "chara
                                                      "character", "character", "numeric",
                                                   "numeric", "numeric"))
 
-names(ucr)[which(names(ucr)=="YEAR")]<-"year"
 ucr[which(ucr$arrest<0),"arrest"]<-NA
 ucr<-ucr%>%filter(!(is.na(FIPS)))
 ### murder data missing for 2014
-ucr<-ucr%>%filter(year!=2014)
+ucr<-ucr%>%filter(YEAR!=2014)
+ucr<-ucr%>%rename(year=YEAR)
 
 #### ADD GENDER ARREST RATES AND MURDER MOVING AVERAGES
 
@@ -40,11 +40,18 @@ pop$gender<-ifelse(pop$sex==0, "all", ifelse(
 
 pop<-pop%>%dplyr::select(-sex)
 
+
+##################
+#NCANDS
+
 cdat<-read.csv("ncands-rpt-county-04-12.csv", 
                colClasses=c("character","numeric", "character",
                             "character", "numeric",
                             "numeric"))
+
 ### DROP STATE TOTALS AND DEIDENTIFIED
+#### ADD COUNT VAR FOR ALL REPORTS FOR ALL SOURCES FOR PRIORS
+cdat<-cdat%>%group_by(FIPS, year, race)%>%mutate(total.rpts=sum(cases))
 
 cdat<-cdat%>%filter(RptSrc=="police")
 cdat<-cdat%>%dplyr::select(-RptSrc)
@@ -129,8 +136,8 @@ density$pop.density<-density$tot.pop/density$land.area
 density<-density%>%dplyr::select(year, FIPS, pop.density)
 
 cdat[which(cdat$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
-
 ucr[which(ucr$FIPS=="12025"), "FIPS"]<-"12086" ##FIX MIAMI-DADE RECODE
+
 ucr.officers<-ucr%>%filter(race=="all", offense=="all", gender=="all")%>%dplyr::select(FIPS, year, officers, MURDER_mav)
 pop.officers<-pop%>%filter(race=="all", gender=="all")%>%dplyr::select(year, FIPS, adult.pop)
 ucr.officers<-left_join(ucr.officers, pop.officers)%>%mutate(officers.pc=officers/adult.pop, murder.pc=MURDER_mav/adult.pop)%>%
@@ -140,8 +147,6 @@ ucrtest<-left_join(ucr, ucr.officers, by=c("FIPS", "year"))
 pop.dens<-left_join(pop, density)
 ### bring in budget data
 ### make composition vars
-pop.dens%>%filter(gender=="all")%>%
-  dplyr::select(FIPS, year, adult.pop, race)%>%spread(., race, adult.pop)
 
 pop.pct<-left_join(pop.dens,pop.dens%>%filter(gender=="all")%>%
                      dplyr::select(FIPS, year, adult.pop, race)%>%spread(., race, adult.pop))%>%
@@ -154,11 +159,11 @@ pop.pct<-left_join(pop.dens,pop.dens%>%filter(gender=="all")%>%
 
 pop.dens<-left_join(pop.dens, pop.pct)
 
-
+### create full data, include NAs for all de-identified counties so it's easy later
 
 pov.full<-full_join(pov, nhgis)
 
-m<-left_join(cdat, pop.dens)
+m<-left_join(pop.dens, cdat)
 m0<-left_join(m, ucrtest)
 m1<-left_join(m0, pov.full)
 m2<-left_join(m1, cname)
@@ -177,5 +182,6 @@ dat<-dat%>%filter(substr(FIPS, 1, 2)!="72")
 z<-which(is.na(dat$state))
 
 dat<-dat%>%filter(race%in%c("ai", "all", "blk", "wht"))
+dat<-dat%>%dplyr::select(-drop)
 
 write.csv(dat, "ncands-fc-merge.csv", row.names=FALSE)

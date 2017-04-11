@@ -29,265 +29,76 @@ grid.arrange(model_out[[1]],model_out[[2]], model_out[[3]], model_out[[4]], mode
              model_out[[14]],model_out[[15]],model_out[[16]],model_out[[17]],model_out[[18]],model_out[[19]],
              model_out[[20]],model_out[[21]],model_out[[22]],model_out[[23]],model_out[[24]])
 dev.off()
-### compare model estimate medians
-#cbind(round(fixef(b.all.white),4), round(fixef(b.all.black),4), round(fixef(b.all.amind),4))
-
-# ### extract coefficiencts from models
-# ### all race, all gender, all offense
-# all.within.sim<-sim(all.within[[1]], n.sims=1000)
-# yhat<-fitted(all.within.sim, all.within[[1]])
-# ## to get the uncertainty for the simulated estimates
-# apply(coef(all.within.sim)$fixef, 2, function(x)quantile(x, c(0.005, 0.025, 0.975, 0.995)))
-# 
-# ### Want visuals for predicted report levels for low/high avg arrests by gender/race/offense
-### for predicted change in report for change in arrest by gender/race/offense
-
-#this would be easier to just sample from posterior predictive... I'll check the state vs county models, then re-run
-#prefered models through rstanarm
-#ultimately - (MUCH LATER) would like to do some imputation of known measurement error
-
-### make scenarios for each
-### write up what I think are interesting counterfactuals and run them
-### do shifts in arrests by crime type by gender and race
-### do low/high mean arrests by crime type by gender and race
-### do shifts in police pc by gender and race
-### do low/high mean police pc by gender and race
-### pull some notable urban/rural counties, cross regions
-#race.dat.bayes<-race.dat.bayes%>%filter(FIPS%in%(sample(race.dat.bayes$FIPS, 10)))
-#sand<-runOffense.stan_glmer(data=race.dat.bayes, model=race.within)
-
-# race.dat.bayes<-as.data.frame(race.dat.bayes)
-
-### set mean values for all variables
-
-##posterior predictive checks
-### this is weird - not sure if it's drawing from the right data
-### try with seattle
-
-
-# ###posterior model fit against observed for b.all.all
-# ydat<-b.all.all$data
-# ydat[is.na(ydat)]<-0
-# yrep<-posterior_predict(b.all.all, newdata = ydat)
-# 
-# plot(density(yrep))
-# lines(density(ydat$cases), col="red")
-# 
-# #REWRITE FOR WITHIN.DAT - new models, make newdata for each model.
-# #want to plot mean expectation, then scenario differences for each fit
-# 
-# 
-# 
-# temp<-within.dat[within.dat$n_obs==43873,]
-# temp[is.na(temp)]<-0
-# yhat<-posterior_predict(b.all.all, newdata = temp)
-# 
-# plot(density(yhat))
-# points(temp$cases)
-
-# ###################################################################################################
-# ####All race, all arrest scenario
-# ###################################################################################################
-# ### make scenario with median values, king county wa
-# newdata<-as.data.frame(lapply(within.dat, function(x) ifelse(is.numeric(x), median(as.numeric(x), na.rm=TRUE), NA)))
-# ### set id variables - using king county WA for now - just moves intercepts
-# newdata$FIPS<-"53033";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
-# newdata$race<-"all";newdata$gender<-"all";newdata$offense<-"all";newdata[which(is.na(newdata))]<-0
-# newdata$child.pop<-100000
-# newdata$n_obs<-43873
-# scen.mean<-posterior_predict(b.all.all, newdata=newdata[1,])
-# 
-# ###make new scenario - diff.arrest.rt+2sd
-# ###all new scenarios start at mean
-# newdata<-bind_rows(newdata, newdata[1,])
-# newdata$diff.arrest.rt[2]<-newdata$diff.arrest.rt[2]+2*sd(within.dat$diff.arrest.rt)
-# scen.arrest.diff<-posterior_predict(b.all.all, newdata=newdata[2,])
-# 
-# ### mean.arrest + 2sd
-# newdata<-bind_rows(newdata, newdata[1,])
-# newdata$mean.arrest.rt[3]<-newdata$mean.arrest.rt[3]+2*sd(within.dat$mean.arrest.rt)
-# scen.arrest.mean<-posterior_predict(b.all.all, newdata=newdata[3,])
-# ### set raceblk for mean arrest + 2sd
-# ### NEAT FD DENSITY PLOTS
-# # plot(density(scen.mean))
-# # plot(density(scen.mean-scen.arrest1sd))
-# 
-# plot.dat<-data.frame("model"="All", "name"="Mean predictors", "lower"=quantile(scen.mean, 0.25), "median"=quantile(scen.mean, 0.5), "upper"=quantile(scen.mean, 0.75))
-# plot.dat$name<-as.character(plot.dat$name); plot.dat
-# plot.dat[2,]<-c("model"="All","Arrest difference +2 sd", quantile(scen.arrest.diff, c(0.25, 0.5, 0.75)))
-# plot.dat[3,]<-c("model"="All","Arrest mean + 2 sd", quantile(scen.arrest.mean, c(0.25, 0.5, 0.75)))
-# 
-# ###convert into rates per 
-# plot.dat$lower<-as.numeric(plot.dat$lower); plot.dat$median<-as.numeric(plot.dat$median); plot.dat$upper<-as.numeric(plot.dat$upper)
-# 
-# ###################################################################################################
-# ####African American, all arrest scenario
-# ###################################################################################################
-# 
-# ### make scenario with median values, king county wa
-# newdata<-as.data.frame(lapply(within.dat%>%filter(race=="blk"), function(x) ifelse(is.numeric(x), median(as.numeric(x), na.rm=TRUE), NA)))
-# ### set id variables - using king county WA for now - just moves intercepts
-# newdata$FIPS<-"53033";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
-# newdata$race<-"blk";newdata$gender<-"all";newdata$offense<-"all";newdata[which(is.na(newdata))]<-0
-# newdata$child.pop<-100000
-# newdata$n_obs<-43873
-# scen.mean<-posterior_predict(b.all.black, newdata=newdata[1,])
-# 
-# ###make new scenario - diff.arrest.rt+2sd
-# ###all new scenarios start at mean
-# newdata<-bind_rows(newdata, newdata[1,])
-# newdata$diff.arrest.rt[2]<-newdata$diff.arrest.rt[2]+2*sd(within.dat$diff.arrest.rt)
-# scen.arrest.diff<-posterior_predict(b.all.all, newdata=newdata[2,])
-# 
-# ### mean.arrest + 2sd
-# newdata<-bind_rows(newdata, newdata[1,])
-# newdata$mean.arrest.rt[3]<-newdata$mean.arrest.rt[3]+2*sd(within.dat$mean.arrest.rt)
-# scen.arrest.mean<-posterior_predict(b.all.all, newdata=newdata[3,])
-# 
-# plot.temp<-data.frame("model"="African American", "name"="Mean predictors", "lower"=quantile(scen.mean, 0.25), "median"=quantile(scen.mean, 0.5), "upper"=quantile(scen.mean, 0.75))
-# plot.temp$name<-as.character(plot.temp$name)
-# plot.temp[2,]<-c("model"="African American","Arrest difference +2 sd", quantile(scen.arrest.diff, c(0.25, 0.5, 0.75)))
-# plot.temp[3,]<-c("model"="African American","Arrest mean + 2 sd", quantile(scen.arrest.mean, c(0.25, 0.5, 0.75)))
-# plot.temp$lower<-as.numeric(plot.temp$lower); plot.temp$median<-as.numeric(plot.temp$median); plot.temp$upper<-as.numeric(plot.temp$upper)
-# 
-# plot.dat<-bind_rows(plot.dat, plot.temp)
-
 
 ### scenarios include: mean for all
 
 make.plot.dat.arrest<-function(data, model, label){
-  ### rewrite for simpler sims, between + arrest, officers, budgets at median vs 90th pct
   ### for RE terms, uses King County Washington 2012
-  ### data term must be filtered for appropriate data
-  newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), mean(as.numeric(x), na.rm=TRUE), NA)))
-  newdata$FIPS<-"0";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
+  ### with first difference models, RE terms are canceled out, just sample those for consistency
+  newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), median(as.numeric(x), na.rm=TRUE), NA)))
+  newdata$FIPS<-"00000";newdata$year<-2012;newdata$stname<-"00";newdata$state<-"00"
   newdata$race<-"all";newdata$gender<-"all";newdata$offense<-"all";newdata[which(is.na(newdata))]<-0
-  newdata$child.pop<-100000
   newdata$n_obs<-0
   newdata$diff.arrest.rt<-0
-  ### median scenario
-  scen.mean<-posterior_predict(model, newdata=newdata)
-                               #, offset=log(newdata$child.pop[1]))
-  # #### diff.arrest + 2sd
-  # temp<-newdata
-  # temp$diff.arrest.rt[2]<-0.005
-  # temp$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.10))
-  # scen.arrest.diff<-posterior_predict(model, newdata=temp, offset=log(temp$child.pop))
+  newdata<-rbind(newdata, newdata)
+  newdata$diff.arrest.rt[2]<-as.numeric(quantile(data$diff.arrest.rt, 0.90))
+  ### 90th percentile arrest increase scenario, diff from median
+  sim.diff<-apply(posterior_predict(model, newdata=newdata), 1, diff)
   
-  ### mean.arrest high
-  temp<-newdata
-  #newdata$diff.arrest.rt[3]<-0.005
-  temp$mean.arrest.rt<-as.numeric(quantile(data$mean.arrest.rt, 0.90))
-  scen.arrest.high<-posterior_predict(model, newdata=temp, offset=log(temp$child.pop))
+  ###90th percentile avg arrest increase, diff from median
+  newdata$diff.arrest.rt[2]<-0
+  newdata$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.90))
+  sim.mean<-apply(posterior_predict(model, newdata=newdata), 1, diff)
   
-  ### diff.arrest high
-  temp<-newdata
-  temp$diff.arrest.rt<-as.numeric(quantile(data$diff.arrest.rt, 0.90))
-  scen.arrest.diff<-posterior_predict(model, newdata=temp, offset=log(temp$child.pop))
-  
-  
-  # ### make officers pc low/high
-  # newdata<-bind_rows(newdata, newdata[1,])
-  # newdata$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.10))
-  # #newdata$diff.officers.pc<-0.0005
-  # scen.off.low<-posterior_predict(model, newdata[4,], offset=log(newdata$child.pop[4]))
-  
-  # ### officers pc high
-  # temp<-newdata
-  # temp$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.90))
-  # #newdata$diff.officers.pc<-0.0005
-  # scen.off.high<-posterior_predict(model, temp, offset=log(temp$child.pop))
-  # 
-  # ### budgets high
-  # temp<-newdata
-  # temp$mean.pol.infl.pc<-as.numeric(quantile(data$mean.pol.infl.pc, 0.90))
-  # #newdata$diff.officers.pc<-0.0005
-  # scen.budg.high<-posterior_predict(model, temp, offset=log(temp$child.pop))
-  
-  
-  
-  plot.temp<-data.frame("model"=label, "name"="   -Median county", "lower"=quantile(scen.mean, 0.25), "median"=quantile(scen.mean, 0.5), "upper"=quantile(scen.mean, 0.75))
+  plot.temp<-data.frame("model"=label, "name"="   -High change in arrest", 
+    "lower"=quantile(sim.diff, 0.25), "median"=quantile(sim.diff, 0.5), 
+    "upper"=quantile(sim.diff, 0.75))
   plot.temp$name<-as.character(plot.temp$name)
-  plot.temp[2,]<-c("model"=label,"   -High change in arrest", quantile(scen.arrest.diff, c(0.25, 0.5, 0.75)))
-  plot.temp[3,]<-c("model"=label,"   -High average arrest", quantile(scen.arrest.high, c(0.25, 0.5, 0.75)))
-  # plot.temp[2,]<-c("model"=label,"  -High officers pc", quantile(scen.off.high, c(0.25, 0.5, 0.75)))
-  # plot.temp[3,]<-c("model"=label,"  -High police spending", quantile(scen.budg.high, c(0.25, 0.5, 0.75)))
+  plot.temp[2,]<-c("model"=label,"   -High mean arrest", 
+    quantile(sim.mean, c(0.25, 0.5, 0.75)))
+  
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child.pop[1])*100000, 
+    lower=(as.numeric(lower)/newdata$child.pop[1])*100000, 
+    upper=(as.numeric(upper)/newdata$child.pop[1])*100000)
   
   return(plot.temp)
 }
 
-
 make.plot.dat.officer<-function(data, model, label){
-  ### rewrite for simpler sims, between + arrest, officers, budgets at median vs 90th pct
-  ### for RE terms, uses King County Washington 2012
-  ### data term must be filtered for appropriate data
-  newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), mean(as.numeric(x), na.rm=TRUE), NA)))
+  newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), median(as.numeric(x), na.rm=TRUE), NA)))
   newdata$FIPS<-"53033";newdata$year<-2012;newdata$stname<-"WA";newdata$state<-"53"
   newdata$race<-"all";newdata$gender<-"all";newdata$offense<-"all";newdata[which(is.na(newdata))]<-0
-  newdata$child.pop<-100000
   newdata$n_obs<-0
-  newdata$diff.arrest.rt<-0
-  ### median scenario
-  scen.mean<-posterior_predict(model, newdata=newdata)
-  #, offset=log(newdata$child.pop[1]))
-  # #### diff.arrest + 2sd
-  # temp<-newdata
-  # temp$diff.arrest.rt[2]<-0.005
-  # temp$mean.arrest.rt[2]<-as.numeric(quantile(data$mean.arrest.rt, 0.10))
-  # scen.arrest.diff<-posterior_predict(model, newdata=temp, offset=log(temp$child.pop))
+  newdata$diff.officers.pc<-0
+  newdata$diff.pol.infl.pc<-0
+  newdata<-rbind(newdata, newdata)
+  newdata$diff.officers.pc[2]<-as.numeric(quantile(data$diff.officers.pc, 0.90))
+  ### 90th percentile officers and budgets increase scenario, diff from median
+  sim.diff.officers<-apply(posterior_predict(model, newdata=newdata), 1, diff)
+  newdata$diff.officers.pc[2]<-0
+  newdata$diff.pol.infl.pc[2]<-as.numeric(quantile(data$diff.pol.infl.pc, 0.90))
+  sim.diff.budget<-apply(posterior_predict(model, newdata=newdata), 1, diff)
   
-  # ### mean.arrest high
-  # temp<-newdata
-  # #newdata$diff.arrest.rt[3]<-0.005
-  # temp$mean.arrest.rt<-as.numeric(quantile(data$mean.arrest.rt, 0.90))
-  # scen.arrest.high<-posterior_predict(model, newdata=temp, offset=log(temp$child.pop))
-  # 
-  # ### diff.arrest high
-  # temp<-newdata
-  # temp$diff.arrest.rt<-as.numeric(quantile(data$diff.arrest.rt, 0.90))
-  # scen.arrest.diff<-posterior_predict(model, newdata=temp, offset=log(temp$child.pop))
-  # 
+  ###90th percentile avg officer, budget increase, diff from median
+  newdata$diff.officers.pc[2]<-0; newdata$diff.pol.infl.pc<-0
+  newdata$mean.officers.pc[2]<-as.numeric(quantile(data$mean.officers.pc, 0.90))
+  sim.mean.officers<-apply(posterior_predict(model, newdata=newdata), 1, diff)
+  newdata$mean.officers.pc[2]<-newdata$mean.officers.pc[1]
+  newdata$mean.pol.infl.pc[2]<-as.numeric(quantile(data$mean.pol.infl.pc, 0.90))
+  sim.mean.budgets<-apply(posterior_predict(model, newdata=newdata), 1, diff)
   
-  # ### make officers pc low/high
-  # newdata<-bind_rows(newdata, newdata[1,])
-  # newdata$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.10))
-  # #newdata$diff.officers.pc<-0.0005
-  # scen.off.low<-posterior_predict(model, newdata[4,], offset=log(newdata$child.pop[4]))
-  
-  ### officers pc diff high
-  temp<-newdata
-  temp$diff.officers.pc<-as.numeric(quantile(data$diff.officers.pc, 0.90))
-  #newdata$diff.officers.pc<-0.0005
-  scen.off.diff<-posterior_predict(model, temp, offset=log(temp$child.pop))
-  
-  ### officers pc average high
-  temp<-newdata
-  temp$mean.officers.pc<-as.numeric(quantile(data$mean.officers.pc, 0.90))
-  #newdata$diff.officers.pc<-0.0005
-  scen.off.high<-posterior_predict(model, temp, offset=log(temp$child.pop))
-
-  ### budgets average high
-  temp<-newdata
-  temp$mean.pol.infl.pc<-as.numeric(quantile(data$mean.pol.infl.pc, 0.90))
-  #newdata$diff.officers.pc<-0.0005
-  scen.budg.high<-posterior_predict(model, temp, offset=log(temp$child.pop))
-  
-  ### budgets diff high
-  temp<-newdata
-  temp$diff.pol.infl.pc<-as.numeric(quantile(data$diff.pol.infl.pc, 0.90))
-  #newdata$diff.officers.pc<-0.0005
-  scen.budg.diff<-posterior_predict(model, temp, offset=log(temp$child.pop))
-  
-  
-  plot.temp<-data.frame("model"=label, "name"="   -Median county", "lower"=quantile(scen.mean, 0.25), "median"=quantile(scen.mean, 0.5), "upper"=quantile(scen.mean, 0.75))
+  plot.temp<-data.frame("model"=label, "name"="   -High change in officers", 
+    "lower"=quantile(sim.diff.officers, 0.25), 
+    "median"=quantile(sim.diff.officers, 0.5), 
+    "upper"=quantile(sim.diff.officers, 0.75))
   plot.temp$name<-as.character(plot.temp$name)
-  plot.temp[2,]<-c("model"=label,"   -High change in officers", quantile(scen.off.diff, c(0.25, 0.5, 0.75)))
-  plot.temp[3,]<-c("model"=label,"   -High average officers", quantile(scen.off.high, c(0.25, 0.5, 0.75)))
-  plot.temp[4,]<-c("model"=label,"   -High change in budget", quantile(scen.budg.diff, c(0.25, 0.5, 0.75)))
-  plot.temp[5,]<-c("model"=label,"   -High average budget", quantile(scen.budg.high, c(0.25, 0.5, 0.75)))
-  # plot.temp[2,]<-c("model"=label,"  -High officers pc", quantile(scen.off.high, c(0.25, 0.5, 0.75)))
-  # plot.temp[3,]<-c("model"=label,"  -High police spending", quantile(scen.budg.high, c(0.25, 0.5, 0.75)))
-  
+  plot.temp[2,]<-c("model"=label,"   -High change in budget", 
+    quantile(sim.diff.budget, c(0.25, 0.5, 0.75)))
+  plot.temp[3,]<-c("model"=label,"   -High average officers", 
+    quantile(sim.mean.officers, c(0.25, 0.5, 0.75)))
+  plot.temp[4,]<-c("model"=label,"   -High average budget", 
+    quantile(sim.mean.budgets, c(0.25, 0.5, 0.75)))
+
   return(plot.temp)
 }
 
@@ -311,17 +122,6 @@ plot.dat<-bind_rows(plot.dat,
                                   model=b.all.black, label="African American"))
 
 ### DROP Native American for this analysis, exclusion of rural has huge effect on results
-# plot.dat<-bind_rows(plot.dat, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="all")%>%filter(race=="ai"),
-#                                   model=b.all.amind, label="Native American"))
-
-# plot.dat<-bind_rows(plot.dat, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="all")%>%filter(gender=="female"),
-#                                   model=b.men.drug, label="  -Men, drug arrests"))
-# 
-# plot.dat<-bind_rows(plot.dat, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="all")%>%filter(gender=="female"),
-#                                   model=b.women.drug, label="  -Women, drug arrests"))
 
 plot.dat$order<-ifelse(plot.dat$model=="Full pop.", 1, ifelse(plot.dat$model=="African American", 2,
                 #ifelse(plot.dat$model=="Native American", 3, 
@@ -330,24 +130,23 @@ plot.dat$order<-ifelse(plot.dat$model=="Full pop.", 1, ifelse(plot.dat$model=="A
 
 plot.dat<-plot.dat%>%arrange((order))
 plot.dat<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.dat)
-index<-grep("Median", plot.dat$name)
+index<-grep("High change in arrest", plot.dat$name)
 plot.dat<-rbind(plot.dat[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),  
                 plot.dat[index[2]:nrow(plot.dat),]))
 # index<-grep("Median", plot.dat$name)
 # plot.dat<-rbind(plot.dat[1:(index[3]-1),], rbind(c(NA, "Native American", NA, NA, NA, NA),  
 #                                                  plot.dat[index[3]:nrow(plot.dat),]))
-index<-grep("Median", plot.dat$name)
+index<-grep("High change in arrest", plot.dat$name)
 plot.dat<-rbind(plot.dat[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),  
                                                  plot.dat[index[3]:nrow(plot.dat),]))
-index<-grep("Median", plot.dat$name)
+index<-grep("High change in arrest", plot.dat$name)
 plot.dat<-rbind(plot.dat[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),  
                                                  plot.dat[index[4]:nrow(plot.dat),]))
-index<-grep("Median", plot.dat$name)
+index<-grep("High change in arrest", plot.dat$name)
 plot.dat<-rbind(plot.dat[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),  
                                                  plot.dat[index[5]:nrow(plot.dat),]))
 plot.dat$offense<-"all"
 plot.dat$yval<-seq(1:nrow(plot.dat))
-
 
 ###############################
 ## Violent
@@ -371,37 +170,24 @@ plot.temp<-bind_rows(plot.temp,
                     make.plot.dat.arrest(within.dat%>%filter(offense=="viol")%>%filter(race=="blk"),
                                   model=b.black.viol, label="African American"))
 
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="viol")%>%filter(race=="ai"),
-#                                   model=b.amind.viol, label="Native American"))
-
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="viol")%>%filter(gender=="female"),
-#                                   model=b.men.drug, label="  -Men, drug arrests"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="viol")%>%filter(gender=="female"),
-#                                   model=b.women.drug, label="  -Women, drug arrests"))
-
 plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
                                       #ifelse(plot.temp$model=="Native American", 3, 
                                       ifelse(plot.temp$model=="White", 4,
                                         ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
+
 plot.temp<-plot.temp%>%arrange((order))
 plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),  
                                                  plot.temp[index[2]:nrow(plot.temp),]))
-# index<-grep("Median", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "Native American", NA, NA, NA, NA),  
-#                                                  plot.temp[index[3]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),  
                                                  plot.temp[index[3]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),  
                                                  plot.temp[index[4]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),  
                                                  plot.temp[index[5]:nrow(plot.temp),]))
 plot.temp$offense<-"viol"
@@ -433,37 +219,23 @@ plot.temp<-bind_rows(plot.temp,
                      make.plot.dat.arrest(within.dat%>%filter(offense=="drug")%>%filter(race=="blk"),
                                    model=b.black.drug, label="African American"))
 
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="drug")%>%filter(race=="ai"),
-#                                   model=b.amind.drug, label="Native American"))
-
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="drug")%>%filter(gender=="female"),
-#                                   model=b.men.drug, label="  -Men, drug arrests"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="drug")%>%filter(gender=="female"),
-#                                   model=b.women.drug, label="  -Women, drug arrests"))
-
 plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
                                                                 #ifelse(plot.temp$model=="Native American", 3, 
                                                                 ifelse(plot.temp$model=="White", 4,
                                                                        ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
 plot.temp<-plot.temp%>%arrange((order))
 plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),  
                                                    plot.temp[index[2]:nrow(plot.temp),]))
-# index<-grep("Median", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "Native American", NA, NA, NA, NA),  
-#                                                  plot.temp[index[3]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),  
                                                    plot.temp[index[3]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),  
                                                    plot.temp[index[4]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),  
                                                    plot.temp[index[5]:nrow(plot.temp),]))
 plot.temp$offense<-"drug"
@@ -495,37 +267,23 @@ plot.temp<-bind_rows(plot.temp,
                      make.plot.dat.arrest(within.dat%>%filter(offense=="qol")%>%filter(race=="blk"),
                                    model=b.black.qol, label="African American"))
 
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="qol")%>%filter(race=="ai"),
-#                                   model=b.amind.qol, label="Native American"))
-
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="qol")%>%filter(gender=="female"),
-#                                   model=b.men.drug, label="  -Men, drug arrests"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#                     make.plot.dat.arrest(within.dat%>%filter(offense=="qol")%>%filter(gender=="female"),
-#                                   model=b.women.drug, label="  -Women, drug arrests"))
-
 plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
                                                                 #ifelse(plot.temp$model=="Native American", 3, 
                                                                 ifelse(plot.temp$model=="White", 4,
                                                                        ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
 plot.temp<-plot.temp%>%arrange((order))
 plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),  
                                                    plot.temp[index[2]:nrow(plot.temp),]))
-# index<-grep("Median", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "Native American", NA, NA, NA, NA),  
-#                                                  plot.temp[index[3]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),  
                                                    plot.temp[index[3]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),  
                                                    plot.temp[index[4]:nrow(plot.temp),]))
-index<-grep("Median", plot.temp$name)
+index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),  
                                                    plot.temp[index[5]:nrow(plot.temp),]))
 plot.temp$offense<-"qol"
@@ -560,8 +318,9 @@ forest<-ggplot(data=plot.dat)+
     panel.grid.minor.y = element_blank(), 
     panel.border = element_blank() 
   )+
-  xlab("Predicted reports by police, 50 percent credible interval")+
+  xlab("Change in police maltreatment reports, 50 percent credible interval")+
   scale_y_reverse()+
+  geom_vline(xintercept=0, linetype=2)+
   facet_wrap(~offense)
 
 table_plot<-ggplot(plot.dat%>%filter(offense%in%c("All", "Violent")))+
@@ -580,7 +339,8 @@ table_plot<-ggplot(plot.dat%>%filter(offense%in%c("All", "Violent")))+
   )+xlim(0,6)+
   scale_y_reverse()+
   facet_wrap(~offense, ncol=1)
-pdf("within-predict-king.pdf", width=12, height=12)
+
+pdf("within-predict-king.pdf", width=7, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
@@ -600,6 +360,7 @@ forest<-ggplot(data=plot.dat%>%filter(offense=="All"))+
   )+
   xlab("Predicted reports by police, 50 percent credible interval")+
   scale_y_reverse()+
+  geom_vline(xintercept=0, linetype=2)+
   facet_wrap(~offense)
 
 table_plot<-ggplot(plot.dat%>%filter(offense==("All")))+
@@ -618,7 +379,7 @@ table_plot<-ggplot(plot.dat%>%filter(offense==("All")))+
   )+xlim(0,6)+
   scale_y_reverse()+
   facet_wrap(~offense, ncol=1)
-pdf("within-predict-only-all-king.pdf", width=8, height=8)
+pdf("within-predict-only-all-king.pdf", width=7, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
@@ -642,33 +403,19 @@ plot.dat<-bind_rows(plot.dat,
                     make.plot.dat.officer(within.dat%>%filter(offense=="all")%>%filter(race=="blk"),
                                          model=b.all.black, label="African American"))
 
-### DROP Native American for this analysis, exclusion of rural has huge effect on results
-# plot.dat<-bind_rows(plot.dat, 
-#                     make.plot.dat.officer(within.dat%>%filter(offense=="all")%>%filter(race=="ai"),
-#                                   model=b.all.amind, label="Native American"))
-
-# plot.dat<-bind_rows(plot.dat, 
-#                     make.plot.dat.officer(within.dat%>%filter(offense=="all")%>%filter(gender=="female"),
-#                                   model=b.men.drug, label="  -Men, drug arrests"))
-# 
-# plot.dat<-bind_rows(plot.dat, 
-#                     make.plot.dat.officer(within.dat%>%filter(offense=="all")%>%filter(gender=="female"),
-#                                   model=b.women.drug, label="  -Women, drug arrests"))
-
 plot.dat$order<-ifelse(plot.dat$model=="Full pop.", 1, ifelse(plot.dat$model=="African American", 2,
-                                                              #ifelse(plot.dat$model=="Native American", 3, 
-                                                              ifelse(plot.dat$model=="White", 3, NA)))
+                        ifelse(plot.dat$model=="White", 3, NA)))
                                                                      
 
 plot.dat<-plot.dat%>%arrange((order))
 plot.dat<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.dat)
-index<-grep("Median", plot.dat$name)
+index<-grep("High change in officers", plot.dat$name)
 plot.dat<-rbind(plot.dat[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),  
                                                  plot.dat[index[2]:nrow(plot.dat),]))
-# index<-grep("Median", plot.dat$name)
+# index<-grep("High change in officers", plot.dat$name)
 # plot.dat<-rbind(plot.dat[1:(index[3]-1),], rbind(c(NA, "Native American", NA, NA, NA, NA),  
 #                                                  plot.dat[index[3]:nrow(plot.dat),]))
-index<-grep("Median", plot.dat$name)
+index<-grep("High change in officers", plot.dat$name)
 plot.dat<-rbind(plot.dat[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),  
                                                  plot.dat[index[3]:nrow(plot.dat),]))
 plot.dat$yval<-seq(1:nrow(plot.dat))
@@ -689,6 +436,7 @@ forest<-ggplot(data=plot.dat)+
     panel.border = element_blank() 
   )+
   xlab("Predicted reports by police, 50 percent credible interval")+
+  geom_vline(xintercept=0, linetype=2)+
   scale_y_reverse()
 
 table_plot<-ggplot(plot.dat)+
@@ -706,7 +454,7 @@ table_plot<-ggplot(plot.dat)+
     strip.text.x = element_blank()
   )+xlim(0,6)+
   scale_y_reverse()
-pdf("within-predict-officer-king.pdf", width=8, height=8)
+pdf("within-predict-officer-king.pdf", width=7, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
@@ -856,3 +604,43 @@ print(xtable(b.men.viol$stan_summary), file="b-men-viol.tex")
 print(xtable(b.men.drug$stan_summary), file="b-men-drug.tex")
 print(xtable(b.men.qol$stan_summary), file="b-men-qol.tex")
 
+#### Pull counties from each sub-region
+
+### pull top pop in sample from each census sub-region
+### list is: Cook, IL (17031); Harris, TX (48201); Maricopa, Az(04013); San Diego, CA (06073); Kings, NY (36047); 
+### Broward, FL (12011); Hennepin, MN (27053); 
+### Fairfield, CT (09011); Shelby, TN (47157)
+### However, not all counties here have x race, x gender
+### pull top pop counties from 2012, get different states
+sample.dat<-within.dat%>%filter(year==2012)%>%filter(offense=="all")%>%filter(race=="all")%>%filter(gender=="all")
+pop.sample<-sample.dat[order(sample.dat$child.pop, decreasing = TRUE),]
+
+
+#################SHIT - SOME DUPLICATE COUNTIES - LA and other have >1 entry for this
+##########################################################
+#################THE LONG FORMAT REALLY ISN'T WORTH IT. COULD RESHAPE LATER. JUST GET IT DONE NOW
+#########################################################
+
+which(as.data.frame(table(pop.sample$FIPS))>1)
+
+
+c.index<-c("17031", "48201", "4013", "6073", "36047", "12011", "27053", "9011", "47157")
+county.samp<-dat%>%filter(FIPS%in%c.index)
+county.samp[is.na(county.samp)]<-0
+
+plot.temp<-county.samp%>%filter(race=='all', gender=="all", offense=="all")
+
+ts.check<-ggplot(plot.temp)+aes(x=year, y=arrest.rt*100000)+geom_line()+facet_wrap(~county)
+### LOOKING AT THE TS, THERE'S FULL ZEROES IN BROWARD, FL, COOK
+### THE UCR DATA IS REALLY BAD
+### NEED TO DO IMPUTATION, MAY AS WELL DO FOR ALL
+
+### predict a new year for these counties using 2011 data (all cases in), drop n_obs term
+county.newdat<-county.samp%>%filter(year==2011)%>%filter(offense=="all")
+county.newdat$n_obs<-rnorm(nrow(county.newdat), 1, 1)
+
+all.c<-posterior_predict(b.all.all, county.newdat%>%filter(gender=="all")%>%filter(race=="all"))
+blk.c<-posterior_predict(b.all.black, county.newdat%>%filter(race=="blk"))
+wht.c<-posterior_predict(b.all.black, county.newdat%>%filter(race=="wht"))
+men.c<-posterior_predict(b.all.black, county.newdat%>%filter(gender=="male"))
+women.c<-posterior_predict(b.all.black, county.newdat%>%filter(gender=="female"))

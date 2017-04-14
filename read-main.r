@@ -92,12 +92,13 @@ m<-left_join(cdat, density)
 m1<-left_join(m, pov)
 m2<-left_join(m1, nhgis)
 m3<-left_join(m2, inf.mort)
+m4<-left_join(m3, ucr)
 
-m3$stname<-m3$state
-m3$state<-substr(m3$FIPS, 1, 2)
+m4$stname<-m4$state
+m4$state<-substr(m4$FIPS, 1, 2)
 
 pol.budget<-read.csv("police-budget.csv", stringsAsFactors = FALSE, colClasses = c("character", "numeric", "numeric"))
-dat<-left_join(m3, pol.budget)
+dat<-left_join(m4, pol.budget)
 
 #### join all FIPS last, join in descending order of complexity
 

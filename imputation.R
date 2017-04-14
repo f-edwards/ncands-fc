@@ -93,9 +93,10 @@ sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
 
 dat.imp<-amelia(dat, ts="year", cs="FIPS", 
                 idvars=c("county", "state", "stname", "n_obs", "adult",
-                  "viol.female", "viol.male", "viol.ai", "viol.blk", "viol.wht", "viol.all"), splinetime=2, 
+                  "qol.male","qol.female", "qol.ai", "qol.blk", "qol.wht", "qol.all"), 
+splinetime=2, 
   priors=prior.mat, overimp = overimp,
-  sqrts = sqrts, logs=logs, p2s=2, m=10, empri=0.01*nrow(dat))
+  sqrts = sqrts, logs=logs, p2s=2, m=5, empri=0.01*nrow(dat))
 
 #### FOR LATER - THIS IS ADEQUATE FOR MISSING DATA AND POVERTY ERROR
 #### THINK ABOUT HOW TO SET UP MEASUREMENT ERROR PROBLEM FOR MISSING RPT AND RACE

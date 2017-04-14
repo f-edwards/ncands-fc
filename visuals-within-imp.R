@@ -85,16 +85,16 @@ make.plot.dat.arrest<-function(data, model, label, diff.var, mean.var){
   ### 90th percentile arrest increase scenario, diff from median
   #### for list imputation objects
   sim.diff<-NULL
-  for(i in 1:10){
+  m<-length(model)
+  for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
     sim.diff<-rbind(sim.diff, sim.temp)
   }
   ###90th percentile avg arrest increase, diff from median
   newdata[2, diff.index]<-0
   newdata[2, mean.index]<-as.numeric(quantile(data[,mean.index], 0.90))
-  
   sim.mean<-NULL
-  for(i in 1:10){
+  for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
     sim.mean<-rbind(sim.mean, sim.temp)
   }
@@ -123,9 +123,9 @@ make.plot.dat.officer<-function(data, model, label){
   newdata<-rbind(newdata, newdata)
   newdata$diff.officers[2]<-as.numeric(quantile(data$diff.officers, 0.90))
   ### 90th percentile officers and budgets increase scenario, diff from median
-  
+  m<-length(model)
   sim.diff.officers<-NULL
-  for(i in 1:10){
+  for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
     sim.diff.officers<-rbind(sim.diff.officers, sim.temp)
   }
@@ -134,7 +134,7 @@ make.plot.dat.officer<-function(data, model, label){
   newdata$diff.pol.infl.pc[2]<-as.numeric(quantile(data$diff.pol.infl.pc, 0.90))
   
   sim.diff.budget<-NULL
-  for(i in 1:10){
+  for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
     sim.diff.budget<-rbind(sim.diff.budget, sim.temp)
   }
@@ -144,7 +144,7 @@ make.plot.dat.officer<-function(data, model, label){
   newdata$mean.officers[2]<-as.numeric(quantile(data$mean.officers, 0.90))
   
   sim.mean.officers<-NULL
-  for(i in 1:10){
+  for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
     sim.mean.officers<-rbind(sim.mean.officers, sim.temp)
   }
@@ -153,7 +153,7 @@ make.plot.dat.officer<-function(data, model, label){
   newdata$mean.pol.infl.pc[2]<-as.numeric(quantile(data$mean.pol.infl.pc, 0.90))
   
   sim.mean.budgets<-NULL
-  for(i in 1:10){
+  for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
     sim.mean.budgets<-rbind(sim.mean.budgets, sim.temp)
   }

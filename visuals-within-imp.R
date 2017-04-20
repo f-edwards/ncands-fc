@@ -578,11 +578,11 @@ nameClean<-function(x){
     if(n[i]%in%c("scale(year)"))
     {n[i]<-"Year"}
     if(n[i]%in%c("SD:n_obs"))
-    {n[i]<-"\\sigma_{\\varepsilon}"}
+    {n[i]<-"SD: Observation"}
     if(n[i]%in%c("SD:FIPS"))
-    {n[i]<-"\\sigma_{\\zeta}"}
+    {n[i]<-"SD: County"}
     if(n[i]%in%c("SD:state"))
-    {n[i]<-"\\sigma_{\\nu}"}
+    {n[i]<-"SD: State"}
     
     if(n[i]%in%c("scale(mean.drug.all)","scale(mean.drug.blk)",
                  "scale(mean.drug.wht)", "scale(mean.drug.ai)",
@@ -605,50 +605,50 @@ nameClean<-function(x){
 }
 
 print(xtable(nameClean(ciList$b.all.all), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, all arrests"), sanitize.text.function = identity, file="b-all-all.tex",
+             police child maltreatment reports. All children, all arrests"),  file="b-all-all.tex",
       caption.placement = getOption("xtable.caption.placement", "top"))
 print(xtable(nameClean(ciList$b.all.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, violent arrests"), sanitize.text.function = identity, file="b-all-viol.tex")
+             police child maltreatment reports. All children, violent arrests"),  file="b-all-viol.tex")
 print(xtable(nameClean(ciList$b.all.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, drug arrests"), sanitize.text.function = identity, file="b-all-drug.tex")
+             police child maltreatment reports. All children, drug arrests"),  file="b-all-drug.tex")
 print(xtable(nameClean(ciList$b.all.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, quality of life arrests"), sanitize.text.function = identity, file="b-all-qol.tex")
+             police child maltreatment reports. All children, quality of life arrests"),  file="b-all-qol.tex")
 
 print(xtable(nameClean(ciList$b.men.all), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male arrests"), sanitize.text.function = identity, file="b-men-all.tex")
+             police child maltreatment reports. All children, male arrests"),  file="b-men-all.tex")
 print(xtable(nameClean(ciList$b.men.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male violent arrests"), sanitize.text.function = identity, file="b-men-viol.tex")
+             police child maltreatment reports. All children, male violent arrests"),  file="b-men-viol.tex")
 print(xtable(nameClean(ciList$b.men.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male drug arrests"), sanitize.text.function = identity, file="b-men-drug.tex")
+             police child maltreatment reports. All children, male drug arrests"),  file="b-men-drug.tex")
 print(xtable(nameClean(ciList$b.men.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male quality of life arrests"), sanitize.text.function = identity, file="b-men-qol.tex")
+             police child maltreatment reports. All children, male quality of life arrests"),  file="b-men-qol.tex")
 
 print(xtable(nameClean(ciList$b.women.all), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female arrests"), sanitize.text.function = identity, file="b-women-all.tex")
+             police child maltreatment reports. All children, female arrests"),  file="b-women-all.tex")
 print(xtable(nameClean(ciList$b.women.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female violent arrests"), sanitize.text.function = identity, file="b-women-viol.tex")
+             police child maltreatment reports. All children, female violent arrests"),  file="b-women-viol.tex")
 print(xtable(nameClean(ciList$b.women.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female drug arrests"), sanitize.text.function = identity, file="b-women-drug.tex")
+             police child maltreatment reports. All children, female drug arrests"),  file="b-women-drug.tex")
 print(xtable(nameClean(ciList$b.women.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female quality of life arrests"), sanitize.text.function = identity, file="b-women-qol.tex")
+             police child maltreatment reports. All children, female quality of life arrests"),  file="b-women-qol.tex")
 
 print(xtable(nameClean(ciList$b.all.black), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, all African American arrests"), sanitize.text.function = identity, file="b-blk-all.tex")
+             police child maltreatment reports. African American children, all African American arrests"),  file="b-blk-all.tex")
 print(xtable(nameClean(ciList$b.blk.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, African American violent arrests"), sanitize.text.function = identity, file="b-blk-viol.tex")
+             police child maltreatment reports. African American children, African American violent arrests"),  file="b-blk-viol.tex")
 print(xtable(nameClean(ciList$b.blk.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, African American drug arrests"), sanitize.text.function = identity, file="b-blk-drug.tex")
+             police child maltreatment reports. African American children, African American drug arrests"),  file="b-blk-drug.tex")
 print(xtable(nameClean(ciList$b.blk.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, African American quality of life arrests"), sanitize.text.function = identity, file="b-blk-qol.tex")
+             police child maltreatment reports. African American children, African American quality of life arrests"),  file="b-blk-qol.tex")
 
 print(xtable(nameClean(ciList$b.all.amind), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, all American Indian arrests"), sanitize.text.function = identity, file="b-ai-all.tex")
+             police child maltreatment reports. American Indian children, all American Indian arrests"),  file="b-ai-all.tex")
 print(xtable(nameClean(ciList$b.ai.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, American Indian violent arrests"), sanitize.text.function = identity, file="b-ai-viol.tex")
+             police child maltreatment reports. American Indian children, American Indian violent arrests"),  file="b-ai-viol.tex")
 print(xtable(nameClean(ciList$b.drug.ai), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, American Indian drug arrests"), sanitize.text.function = identity, file="b-ai-drug.tex")
+             police child maltreatment reports. American Indian children, American Indian drug arrests"),  file="b-ai-drug.tex")
 print(xtable(nameClean(ciList$b.ai.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, American Indian quality of life arrests"), sanitize.text.function = identity, file="b-ai-qol.tex")
+             police child maltreatment reports. American Indian children, American Indian quality of life arrests"),  file="b-ai-qol.tex")
 
 
 

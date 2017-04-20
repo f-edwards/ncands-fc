@@ -82,11 +82,16 @@ overimp<-rbind(cbind(1:nrow(dat), rep(which(colnames(dat)=="child.pov"))),
   cbind(1:nrow(dat), rep(which(colnames(dat)=="blk.chpov_pe"))),
   cbind(1:nrow(dat), rep(which(colnames(dat)=="ai.chpov_pe"))))
 
-logs<-c("median.hh.income")
-## sqrt for all counts
+## sqrt for all positives
 counts<-c(which(names(dat)=="polrpt"), which(names(dat)=="NArpt.wht"))
 sqrts<-names(dat)[counts[1]:counts[2]]
-counts<-c(which(names(dat)=="child"), which(names(dat)=="pop.density"))
+counts<-c(which(names(dat)=="child"), which(names(dat)=="wht.chpov_se"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+counts<-c(which(names(dat)=="infmort"), which(names(dat)=="drug.male"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+counts<-c(which(names(dat)=="viol.female"), which(names(dat)=="drug.wht"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+counts<-c(which(names(dat)=="viol.ai"), which(names(dat)=="MURDER_mav"))
 sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
 
 ### this works - can't really figure out why the viol measures are problematic though
@@ -96,9 +101,36 @@ dat.imp<-amelia(dat, ts="year", cs="FIPS",
                   "qol.male","qol.female", "qol.ai", "qol.blk", "qol.wht", "qol.all"), 
 splinetime=2, 
   priors=prior.mat, overimp = overimp,
-  sqrts = sqrts, logs=logs, p2s=2, m=5, empri=0.01*nrow(dat))
+  sqrts = sqrts, p2s=2, m=5, empri=0.01*nrow(dat))
 
 #### FOR LATER - THIS IS ADEQUATE FOR MISSING DATA AND POVERTY ERROR
 #### THINK ABOUT HOW TO SET UP MEASUREMENT ERROR PROBLEM FOR MISSING RPT AND RACE
 #### NEED TO TALK MORE WITH ARCHIVISTS TO THINK ABOUT WHETHER POL RPTS ARE LIKELY TO BE MISSING
 #### RACE IMPUTATION WOULD BE SIMPLER
+
+counts<-c(which(names(dat)=="polrpt"), which(names(dat)=="NArpt.wht"))
+sqrts<-names(dat)[counts[1]:counts[2]]
+counts<-c(which(names(dat)=="child"), which(names(dat)=="wht.chpov_se"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+counts<-c(which(names(dat)=="infmort"), which(names(dat)=="qol.male"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+counts<-c(which(names(dat)=="arrest.ai"), which(names(dat)=="qol.wht"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+counts<-c(which(names(dat)=="officers"), which(names(dat)=="MURDER_mav"))
+sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
+
+dat.temp<-amelia(dat, ts="year", cs="FIPS", 
+                idvars=c("county", "state", "stname", "n_obs", "adult",
+                  "viol.male","viol.female", "viol.ai", "viol.blk", "viol.wht", "viol.all"), 
+splinetime=2, 
+  priors=prior.mat, overimp = overimp,
+  sqrts = sqrts,  p2s=2, m=5, empri=0.01*nrow(dat))
+
+for(i in 1:5){
+  dat.imp$imputations[[i]]$qol.male<-dat.temp$imputations[[i]]$qol.male
+  dat.imp$imputations[[i]]$qol.female<-dat.temp$imputations[[i]]$qol.female
+  dat.imp$imputations[[i]]$qol.ai<-dat.temp$imputations[[i]]$qol.ai
+  dat.imp$imputations[[i]]$qol.blk<-dat.temp$imputations[[i]]$qol.blk
+  dat.imp$imputations[[i]]$qol.wht<-dat.temp$imputations[[i]]$qol.wht
+  dat.imp$imputations[[i]]$qol.all<-dat.temp$imputations[[i]]$qol.all
+}

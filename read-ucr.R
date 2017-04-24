@@ -173,6 +173,15 @@ ucr.agencyfile<-full_join(ucr.wide.gender, ucr.wide)
 # ### to sort: weapons 150, prostitution 160, sex offenses 170, gambling (190:193), off. family children (200),
 # ### DUI 210, runaways 290, NA 998
 # 
+
+###############EMPLOYEE DATA
+### using ICPSR FILES
+#  [1] "03445-0001-Data.dta" "03749-0001-Data.dta" "03996-0001-Data.dta"
+#  [4] "04269-0001-Data.dta" "04462-0001-Data.dta" "04719-0001-Data.dta"
+#  [7] "22402-0001-Data.dta" "25104-0001-Data.dta" "27646-0001-Data.dta"
+# [10] "30765-0001-Data.dta" "33525-0001-Data.dta" "34584-0001-Data.dta"
+# [13] "35020-0001-Data.dta" "36119-0001-Data.dta" "36395-0001-Data.dta"
+
 setwd("R:/Project/NCANDS/ncands-csv/leoka/")
 
 ### read leoka data
@@ -286,7 +295,12 @@ leoka.county<-leoka.dat%>%group_by(FIPS, YEAR)%>%summarise(officers=sum(officers
 # plot(drug.tot~DRUGTOT, test, pch=".")
 # text(drug.tot~DRUGTOT, data=test,labels=test$FIPS)
 
-#### Offense data at the county-level for homicide moving ave
+#### Offense data at the county-level for homicide moving ave using ICPSR files
+# [1] "03451-0004-Data.txt" "03721-0004-Data.txt" "04009-0004-Data.txt"
+#  [4] "04360-0004-Data.txt" "04466-0004-Data.txt" "04717-0004-Data.txt"
+#  [7] "23780-0004-Data.txt" "25114-0004-Data.txt" "27644-0004-Data.txt"
+# [10] "30763-0004-Data.txt" "33523-0004-Data.txt" "34582-0004-Data.txt"
+# [13] "35019-0004-Data.txt" "36117-0004-Data.txt"
 
 setwd("R:/Project/NCANDS/ncands-csv/ucr-county-offenses/data")
 files<-list.files()

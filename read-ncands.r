@@ -16,7 +16,7 @@ ncands.county<-function(dat){
                              ifelse(ChRacAI==1, "ai",
                                     ifelse(ChRacNH==1, "hawpi",
                                            ifelse(ChRacAs==1, "aa",
-                                                  ifelse(ChRacWh==1, "wht", "missing"))))))
+                                                  ifelse((ChRacWh==1&CEthn!=1), "wht", "missing"))))))
   
   dat$race[is.na(dat$race)]<-"missing"
   
@@ -80,7 +80,6 @@ ncands.county<-function(dat){
 
   return(out)
 }
-
 
 dat12<-read.dta("Child2012v1.dta", convert.factors = FALSE)
 county.out<-ncands.county(dat12)

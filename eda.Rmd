@@ -107,55 +107,6 @@ row.names(pol.region)<-c("All", "police")
 print("police reports by census region")
 pander(pol.region)
 ### correlation matrix for arrest data
-dat<-read.csv("R:/Project/NCANDS/ncands-csv/ncands-fc-merge.csv")
-dat<-dat%>%filter(gender=="all")%>%filter(offense=="all")%>%filter(race=="all")
-
-print("r(cases pc, arrests pc)")
-print(cor(dat$cases/dat$child.pop, dat$arrest/dat$adult.pop, use="complete"))
-print("r(cases pc, officers pc)")
-print(cor(dat$cases/dat$child.pop, dat$officers.pc, use="complete"))
-print("r(cases pc, state budgets pc)")
-print(cor(dat$cases/dat$child.pop, dat$pol.infl.pc, use="complete"))
-print("r(cases pc, child pov pc)")
-print(cor(dat$cases/dat$child.pop, dat$child.pov/dat$child.pop, use="complete"))
-print("r(cases pc, infmort)")
-print(cor(dat$cases/dat$child.pop, dat$infmort, use="complete"))
-
-print("non-rural reporting pc")
-print(mean(dat[dat$adult.pop>100000, "cases"]/dat[dat$adult.pop>100000, "child.pop"]), na.rm=TRUE)
-print("rural (less than 100k adult pop, more than 1k total reports, can't really use this)")
-print(mean(dat[dat$adult.pop<100000,"cases"]/dat[dat$adult.pop<100000,"child.pop"]), na.rm=TRUE)
-
-dat<-dat%>%mutate(arrest.rt=arrest/(adult.pop))
-within.dat<-dat
-within.dat<-within.dat%>%group_by(FIPS)%>%
-  mutate(mean.murder.pc=mean(murder.pc, na.rm=TRUE), mean.officers.pc=mean(officers.pc, na.rm=TRUE),
-   mean.infmort=mean(infmort, na.rm=TRUE), mean.wht.infmort=mean(wht.infmort, na.rm=TRUE), 
-   mean.nonwht.infmort=mean(nonwht.infmort, na.rm=TRUE),
-   mean.pop.density=mean(pop.density, na.rm=TRUE),mean.cases.pc=mean(cases/child.pop, na.rm=TRUE),
-   mean.pol.infl.pc=mean(pol.infl.pc, na.rm=TRUE))%>%ungroup
-within.dat<-within.dat%>%group_by(FIPS, gender, race, offense)%>%mutate(mean.arrest.rt=mean(arrest.rt, na.rm=TRUE))%>%ungroup
-within.dat<-within.dat%>%group_by(FIPS, race)%>%mutate(mean.child.pov.pc=mean(child.pov/child.pop, na.rm=TRUE),
-                                                       mean.pct.race.pop=mean(pct.race.pop))%>%ungroup
-within.dat<-within.dat%>%
-  mutate(diff.murder.pc=murder.pc-mean.murder.pc, 
-         diff.officers.pc=officers.pc-mean.officers.pc,
-        diff.infmort=infmort-mean.infmort, diff.wht.infmort=wht.infmort-mean.wht.infmort,
-        diff.nonwht.infmort=nonwht.infmort-mean.nonwht.infmort, 
-        diff.arrest.rt=arrest.rt-mean.arrest.rt, 
-        diff.child.pov.pc=(child.pov/child.pop)-mean.child.pov.pc,
-        diff.pop.density=pop.density-mean.pop.density,
-        diff.pol.infl.pc=pol.infl.pc-mean.pol.infl.pc,
-        diff.pct.race.pop=mean.pct.race.pop-pct.race.pop,
-    diff.cases.pc=mean.cases.pc-(cases/child.pop))
-print("arrest rt within unit")
-print(quantile(within.dat$diff.arrest.rt, c(0.05, 0.5, 0.95), na.rm=TRUE))
-print("officer rt within unit")
-print((quantile(within.dat$diff.officers.pc, c(0.05, 0.5, 0.95), na.rm=TRUE)))
-print("report rt within unit")
-print(quantile(within.dat$diff.cases.pc, c(0.05, 0.5, 0.95)))
-
-print(summary(dat))
 
 # 
 # #### TS PLOTS ON OUTCOMES

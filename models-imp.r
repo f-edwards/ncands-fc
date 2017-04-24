@@ -19,11 +19,13 @@ library(MASS)
 library(arm)
 library(parallel)
 library(rstan)
-cores<-4
+
+
 
 set.seed(1)
-setwd("D:/sync/ncands-fc/")
-dat.in<-read.csv("D:/sync/ncands-csv/ncands-fc-merge.csv")
+cores=parallel::detectCores()
+setwd("R:/Project/NCANDS/ncands-fc/")
+dat.in<-read.csv("R:/Project/NCANDS/ncands-csv/ncands-fc-merge.csv")
 
 ### to filter for ACS 5-year availability
 dat.in<-dat.in%>%filter(year>2005)
@@ -49,16 +51,12 @@ dat$n_obs<-1:nrow(dat)
 
 ###don't have race/poverty data for 04, 05
 
-### dropping counties missing more than 40 percent of reportsource or race in ncands
+### imputing counties missing more than 40 percent of reportsource or race in ncands
 error.index1<-which((dat$NArpt/dat$totalrpt)>0.4)
-error.index2<-which((dat$totalrpt.missing/dat$totalrpt)>0.4)
-error<-union(error.index1, error.index2)
+dat[error.index1,3:17]<-NA
 
-dat<-dat[-error,]
-ptm<-proc.time()
 ##### missing data imputation and overimputation for poverty with known error
-source("D:/sync/ncands-fc/imputation.R", verbose=TRUE)
-proc.time()-ptm
+source("R:/Project/NCANDS/ncands-fc/imputation.R", verbose=TRUE)
 ##### transform imputed variables
 predictors<-c("child.pov", "median.hh.income", "blk.chpov_pe", "ai.chpov_pe", "wht.chpov_pe", "infmort",
   "wht.infmort", "nonwht.infmort", "arrest.female", "arrest.male", "drug.female", "drug.male", "qol.female",
@@ -79,8 +77,8 @@ makeMeanDiff<-function(x, vars){
   return(x)
 }
 
-
-for(j in 1:10){
+m<-length(dat.imp$imputations)
+for(j in 1:m){
 
   dat.imp$imputations[[j]]<-dat.imp$imputations[[j]]%>%mutate(arrest.female=arrest.female/women, arrest.male=arrest.male/men,
     arrest.ai=arrest.ai/adult.ai, arrest.blk=arrest.blk/adult.blk, arrest.wht=arrest.wht/adult.wht, 
@@ -89,7 +87,8 @@ for(j in 1:10){
     qol.female=qol.female/women, qol.male=qol.male/men, qol.blk=qol.blk/adult.blk, qol.wht=qol.wht/adult.wht,
     viol.ai=viol.ai/adult.ai, viol.blk=viol.blk/adult.blk, viol.wht=viol.wht/adult.wht, viol.all=viol.all/adult, 
     viol.male=viol.male/men, viol.female=viol.female/women, officers=officers/(adult+child), MURDER_mav=MURDER_mav/adult,
-    pct.blk=(adult.blk+child.blk)/(adult+child), pct.ai=(adult.ai+child.ai)/(adult+child))
+    pct.blk=(adult.blk+child.blk)/(adult+child), pct.ai=(adult.ai+child.ai)/(adult+child), polrpt=trunc(polrpt),
+    polrpt.blk=trunc(polrpt.blk), polrpt.ai=trunc(polrpt.ai), polrpt.wht=trunc(polrpt.wht))
   
   dat.imp$imputations[[j]]<-makeMeanDiff(dat.imp$imputations[[j]], predictors)
 
@@ -106,8 +105,6 @@ for(j in 1:10){
 # Models
 ####################################################################
 
-### FOR FULLY ELABORATED MODEL NEED TO CREATE FIPS MEAN VARIABLES AND FIPS-MEAN-CENTERED MEASURES
-
 within<-polrpt~scale(diff.arrest.all)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
@@ -116,6 +113,7 @@ within<-polrpt~scale(diff.arrest.all)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
+Sys.time()
 
 b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
                       data=x,
@@ -125,7 +123,6 @@ b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
-
 
 within<-polrpt~scale(diff.arrest.male)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
@@ -161,7 +158,7 @@ b.women.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
 
 save.image(file="models-imp.RData")
 
-within<-polrpt~scale(diff.arrest.wht)+
+within<-polrpt.wht~scale(diff.arrest.wht)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.wht.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.wht.infmort)+scale(diff.median.hh.income)+
   scale(mean.arrest.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
@@ -171,14 +168,14 @@ within<-polrpt~scale(diff.arrest.wht)+
 
 b.all.white<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
                       data=x,
-                      offset=log(child), family=poisson, 
+                      offset=log(child.wht), family=poisson, 
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
 
-within<-polrpt~scale(diff.arrest.blk)+
+within<-polrpt.blk~scale(diff.arrest.blk)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.blk.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
   scale(mean.arrest.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
@@ -188,45 +185,45 @@ within<-polrpt~scale(diff.arrest.blk)+
 
 b.all.black<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
                       data=x,
-                      offset=log(child), family=poisson, 
+                      offset=log(child.blk), family=poisson, 
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
 
-# within<-polrpt~scale(diff.arrest.ai)+
+# within<-polrpt.ai~scale(diff.arrest.ai)+
 #   scale(diff.officers)+scale(diff.pol.infl.pc)+
 #   scale(diff.ai.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
 #   scale(mean.arrest.ai)+scale(mean.officers)+scale(mean.pol.infl.pc)+
 #   scale(mean.MURDER_mav)+scale(mean.ai.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
-#   scale(pop.density)+scale(pct.ai)+scale(pct.ai)+scale(year)+
+#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
 #   (1|state)+(1|FIPS)+(1|n_obs)
-
-# b.all.amind<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+# 
+# b.all.amind<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
 #                       data=x,
-#                       offset=log(child), family=poisson, 
+#                       offset=log(child.ai), family=poisson,
 #                       verbose=1, cores=cores,
 #                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
 #                       chains=4, iter=1000)})
-
-save.image(file="models-imp.RData")
+# 
+# save.image(file="models-imp.RData")
 
 #############################################################################
 ## Drug arrest models
 #############################################################################
 
 
-within<-polrpt~scale(diff.arrest.all)+
+within<-polrpt~scale(diff.drug.all)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.all)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.drug.all)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
 
-b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+b.all.drug<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
                       data=x,
                       offset=log(child), family=poisson, 
                       verbose=1, cores=cores,
@@ -236,90 +233,105 @@ b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
 save.image(file="models-imp.RData")
 
 
-within<-polrpt~scale(diff.arrest.male)+
+within<-polrpt~scale(diff.drug.male)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.male)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.drug.male)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-b.men.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+b.men.drug<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
-                      offset=log(child), family=poisson, 
+                      offset=log(child), family=poisson,
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
 
-within<-polrpt~scale(diff.arrest.female)+
+within<-polrpt~scale(diff.drug.female)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.female)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.drug.female)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-b.women.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+b.women.drug<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
-                      offset=log(child), family=poisson, 
+                      offset=log(child), family=poisson,
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
 
-within<-polrpt~scale(diff.arrest.wht)+
+within<-polrpt.wht~scale(diff.drug.wht)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.wht.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.wht.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.drug.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.wht.chpov_pe)+scale(mean.wht.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-b.all.white<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+b.wht.drug<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
                       data=x,
-                      offset=log(child), family=poisson, 
+                      offset=log(child.wht), family=poisson, 
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
 
-within<-polrpt~scale(diff.arrest.blk)+
+within<-polrpt.blk~scale(diff.drug.blk)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.blk.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.drug.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.blk.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-b.all.black<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+b.blk.drug<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
                       data=x,
-                      offset=log(child), family=poisson, 
+                      offset=log(child.blk), family=poisson, 
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
- 
+
+# within<-polrpt.ai~scale(diff.drug.ai)+
+#   scale(diff.officers)+scale(diff.pol.infl.pc)+
+#   scale(diff.ai.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
+#   scale(mean.drug.ai)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+#   scale(mean.MURDER_mav)+scale(mean.ai.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
+#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+#   (1|state)+(1|FIPS)+(1|n_obs)
+# Sys.time()
+# b.drug.ai<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+#                       data=x,
+#                       offset=log(child.ai), family=poisson,
+#                       verbose=1, cores=cores,
+#                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+#                       chains=4, iter=1000)})
+# 
+# save.image(file="models-imp.RData")
+
 #################################################
 ## Violent arrest models
 #################################################
 
-
-
-within<-polrpt~scale(diff.arrest.all)+
+within<-polrpt~scale(diff.viol.all)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.all)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.viol.all)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-
-b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+Sys.time()
+b.all.viol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
                       offset=log(child), family=poisson,
                       verbose=1, cores=cores,
@@ -328,16 +340,15 @@ b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
 
 save.image(file="models-imp.RData")
 
-
-within<-polrpt~scale(diff.arrest.male)+
+within<-polrpt~scale(diff.viol.male)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.male)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.viol.male)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
-
-b.men.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+Sys.time()
+b.men.viol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
                       offset=log(child), family=poisson,
                       verbose=1, cores=cores,
@@ -345,16 +356,16 @@ b.men.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
-
-within<-polrpt~scale(diff.arrest.female)+
+Sys.time()
+within<-polrpt~scale(diff.viol.female)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.female)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.viol.female)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-b.women.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+b.women.viol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
                       offset=log(child), family=poisson,
                       verbose=1, cores=cores,
@@ -362,130 +373,163 @@ b.women.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
-
-within<-polrpt~scale(diff.arrest.wht)+
+Sys.time()
+within<-polrpt.wht~scale(diff.viol.wht)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.wht.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.wht.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.viol.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.wht.chpov_pe)+scale(mean.wht.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
 
-b.all.white<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+b.wht.viol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
-                      offset=log(child), family=poisson,
+                      offset=log(child.wht), family=poisson,
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
 
-within<-polrpt~scale(diff.arrest.blk)+
+within<-polrpt.blk~scale(diff.viol.blk)+
   scale(diff.officers)+scale(diff.pol.infl.pc)+
   scale(diff.blk.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
-  scale(mean.arrest.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.viol.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
   scale(mean.MURDER_mav)+scale(mean.blk.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
   (1|state)+(1|FIPS)+(1|n_obs)
-
-b.all.black<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+Sys.time()
+b.blk.viol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
                       data=x,
-                      offset=log(child), family=poisson,
+                      offset=log(child.blk), family=poisson,
                       verbose=1, cores=cores,
                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
                       chains=4, iter=1000)})
 
 save.image(file="models-imp.RData")
+
+# within<-polrpt.ai~scale(diff.viol.ai)+
+#   scale(diff.officers)+scale(diff.pol.infl.pc)+
+#   scale(diff.ai.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
+#   scale(mean.viol.ai)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+#   scale(mean.MURDER_mav)+scale(mean.ai.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
+#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+#   (1|state)+(1|FIPS)+(1|n_obs)
+# Sys.time()
+# b.ai.viol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+#                       data=x,
+#                       offset=log(child.ai), family=poisson,
+#                       verbose=1, cores=cores,
+#                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+#                       chains=4, iter=1000)})
+# 
+# save.image(file="models-imp.RData")
 
 # ################################################
 # ## QoL arrests
 # ################################################
-# 
-# 
-# 
-# within<-polrpt~scale(diff.arrest.all)+
+
+within<-polrpt~scale(diff.qol.all)+
+  scale(diff.officers)+scale(diff.pol.infl.pc)+
+  scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
+  scale(mean.qol.all)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
+  scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+  (1|state)+(1|FIPS)+(1|n_obs)
+
+Sys.time()
+b.all.qol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+                      data=x,
+                      offset=log(child), family=poisson,
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)})
+
+save.image(file="models-imp.RData")
+
+within<-polrpt~scale(diff.qol.male)+
+  scale(diff.officers)+scale(diff.pol.infl.pc)+
+  scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
+  scale(mean.qol.male)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
+  scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+  (1|state)+(1|FIPS)+(1|n_obs)
+Sys.time()
+b.men.qol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+                      data=x,
+                      offset=log(child), family=poisson,
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)})
+
+save.image(file="models-imp.RData")
+
+within<-polrpt~scale(diff.qol.female)+
+  scale(diff.officers)+scale(diff.pol.infl.pc)+
+  scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
+  scale(mean.qol.female)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
+  scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+  (1|state)+(1|FIPS)+(1|n_obs)
+Sys.time()
+b.women.qol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+                      data=x,
+                      offset=log(child), family=poisson,
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)})
+
+save.image(file="models-imp.RData")
+
+within<-polrpt.wht~scale(diff.qol.wht)+
+  scale(diff.officers)+scale(diff.pol.infl.pc)+
+  scale(diff.wht.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.wht.infmort)+scale(diff.median.hh.income)+
+  scale(mean.qol.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.MURDER_mav)+scale(mean.wht.chpov_pe)+scale(mean.wht.infmort)+scale(mean.median.hh.income)+
+  scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+  (1|state)+(1|FIPS)+(1|n_obs)
+Sys.time()
+b.wht.qol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+                      data=x,
+                      offset=log(child.wht), family=poisson,
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)})
+
+save.image(file="models-imp.RData")
+
+within<-polrpt.blk~scale(diff.qol.blk)+
+  scale(diff.officers)+scale(diff.pol.infl.pc)+
+  scale(diff.blk.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
+  scale(mean.qol.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+  scale(mean.MURDER_mav)+scale(mean.blk.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
+  scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
+  (1|state)+(1|FIPS)+(1|n_obs)
+Sys.time()
+b.blk.qol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
+                      data=x,
+                      offset=log(child.blk), family=poisson,
+                      verbose=1, cores=cores,
+                      prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
+                      chains=4, iter=1000)})
+
+save.image(file="models-imp.RData")
+
+# within<-polrpt.ai~scale(diff.qol.ai)+
 #   scale(diff.officers)+scale(diff.pol.infl.pc)+
-#   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-#   scale(mean.arrest.all)+scale(mean.officers)+scale(mean.pol.infl.pc)+
-#   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
+#   scale(diff.ai.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
+#   scale(mean.qol.ai)+scale(mean.officers)+scale(mean.pol.infl.pc)+
+#   scale(mean.MURDER_mav)+scale(mean.ai.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
 #   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
 #   (1|state)+(1|FIPS)+(1|n_obs)
-# 
-# 
-# b.all.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
+# Sys.time()
+# b.ai.qol<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within,
 #                       data=x,
-#                       offset=log(child), family=poisson, 
+#                       offset=log(child.ai), family=poisson,
 #                       verbose=1, cores=cores,
 #                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
 #                       chains=4, iter=1000)})
 # 
 # save.image(file="models-imp.RData")
 # 
-# 
-# within<-polrpt~scale(diff.arrest.male)+
-#   scale(diff.officers)+scale(diff.pol.infl.pc)+
-#   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-#   scale(mean.arrest.male)+scale(mean.officers)+scale(mean.pol.infl.pc)+
-#   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
-#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
-#   (1|state)+(1|FIPS)+(1|n_obs)
-# 
-# b.men.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
-#                       data=x,
-#                       offset=log(child), family=poisson, 
-#                       verbose=1, cores=cores,
-#                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-#                       chains=4, iter=1000)})
-# 
-# save.image(file="models-imp.RData")
-# 
-# within<-polrpt~scale(diff.arrest.female)+
-#   scale(diff.officers)+scale(diff.pol.infl.pc)+
-#   scale(diff.child.pov)+scale(diff.MURDER_mav)+scale(diff.infmort)+scale(diff.median.hh.income)+
-#   scale(mean.arrest.female)+scale(mean.officers)+scale(mean.pol.infl.pc)+
-#   scale(mean.MURDER_mav)+scale(mean.child.pov)+scale(mean.infmort)+scale(mean.median.hh.income)+
-#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
-#   (1|state)+(1|FIPS)+(1|n_obs)
-# 
-# b.women.all<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
-#                       data=x,
-#                       offset=log(child), family=poisson, 
-#                       verbose=1, cores=cores,
-#                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-#                       chains=4, iter=1000)})
-# 
-# save.image(file="models-imp.RData")
-# 
-# within<-polrpt~scale(diff.arrest.wht)+
-#   scale(diff.officers)+scale(diff.pol.infl.pc)+
-#   scale(diff.wht.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.wht.infmort)+scale(diff.median.hh.income)+
-#   scale(mean.arrest.wht)+scale(mean.officers)+scale(mean.pol.infl.pc)+
-#   scale(mean.MURDER_mav)+scale(mean.wht.chpov_pe)+scale(mean.wht.infmort)+scale(mean.median.hh.income)+
-#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
-#   (1|state)+(1|FIPS)+(1|n_obs)
-# 
-# b.all.white<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
-#                       data=x,
-#                       offset=log(child), family=poisson, 
-#                       verbose=1, cores=cores,
-#                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-#                       chains=4, iter=1000)})
-# 
-# save.image(file="models-imp.RData")
-# 
-# within<-polrpt~scale(diff.arrest.blk)+
-#   scale(diff.officers)+scale(diff.pol.infl.pc)+
-#   scale(diff.blk.chpov_pe)+scale(diff.MURDER_mav)+scale(diff.nonwht.infmort)+scale(diff.median.hh.income)+
-#   scale(mean.arrest.blk)+scale(mean.officers)+scale(mean.pol.infl.pc)+
-#   scale(mean.MURDER_mav)+scale(mean.blk.chpov_pe)+scale(mean.nonwht.infmort)+scale(mean.median.hh.income)+
-#   scale(pop.density)+scale(pct.blk)+scale(pct.ai)+scale(year)+
-#   (1|state)+(1|FIPS)+(1|n_obs)
-# 
-# b.all.black<-lapply(dat.imp$imputations, function(x){stan_glmer(formula=within, 
-#                       data=x,
-#                       offset=log(child), family=poisson, 
-#                       verbose=1, cores=cores,
-#                       prior=normal(0, 1),  prior_intercept = normal(0, 3), prior_covariance = decov(1,1,1,1),
-#                       chains=4, iter=1000)})
-# 
-# save.image(file="models-imp.RData")
+q(save="no")

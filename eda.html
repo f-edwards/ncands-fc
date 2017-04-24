@@ -124,6 +124,7 @@ $(document).ready(function () {
 </div>
 
 
+<pre><code>## Warning: package 'dplyr' was built under R version 3.3.3</code></pre>
 <pre><code>## 
 ## Attaching package: 'dplyr'</code></pre>
 <pre><code>## The following objects are masked from 'package:stats':
@@ -132,6 +133,7 @@ $(document).ready(function () {
 <pre><code>## The following objects are masked from 'package:base':
 ## 
 ##     intersect, setdiff, setequal, union</code></pre>
+<pre><code>## Warning: package 'pander' was built under R version 3.3.3</code></pre>
 <pre><code>## [1] &quot;police reports by malt type&quot;</code></pre>
 <table>
 <caption>Table continues below</caption>
@@ -331,93 +333,6 @@ $(document).ready(function () {
 </tr>
 </tbody>
 </table>
-<pre><code>## [1] &quot;r(cases pc, arrests pc)&quot;</code></pre>
-<pre><code>## [1] -0.1793312</code></pre>
-<pre><code>## [1] &quot;r(cases pc, officers pc)&quot;</code></pre>
-<pre><code>## [1] -0.02507393</code></pre>
-<pre><code>## [1] &quot;r(cases pc, state budgets pc)&quot;</code></pre>
-<pre><code>## [1] 0.08688218</code></pre>
-<pre><code>## [1] &quot;r(cases pc, child pov pc)&quot;</code></pre>
-<pre><code>## [1] 0.1034736</code></pre>
-<pre><code>## [1] &quot;r(cases pc, infmort)&quot;</code></pre>
-<pre><code>## [1] 0.0157244</code></pre>
-<pre><code>## [1] &quot;non-rural reporting pc&quot;</code></pre>
-<pre><code>## [1] 0.009550305</code></pre>
-<pre><code>## [1] &quot;rural (less than 100k adult pop, more than 1k total reports, can't really use this)&quot;</code></pre>
-<pre><code>## [1] 0.01594335</code></pre>
-<pre><code>## [1] &quot;arrest rt within unit&quot;</code></pre>
-<pre><code>##          5%         50%         95% 
-## -0.01433673  0.00000000  0.01344642</code></pre>
-<pre><code>## [1] &quot;officer rt within unit&quot;</code></pre>
-<pre><code>##            5%           50%           95% 
-## -3.075714e-04  2.094094e-06  2.883123e-04</code></pre>
-<pre><code>## [1] &quot;report rt within unit&quot;</code></pre>
-<pre><code>##            5%           50%           95% 
-## -0.0054716791  0.0002732031  0.0054123374</code></pre>
-<pre><code>##       FIPS            year       race          cases        
-##  Min.   : 1003   Min.   :2004   ai :   0   Min.   :    0.0  
-##  1st Qu.:16001   1st Qu.:2006   all:5814   1st Qu.:  187.0  
-##  Median :29071   Median :2008   blk:   0   Median :  331.0  
-##  Mean   :28828   Mean   :2008   wht:   0   Mean   :  759.4  
-##  3rd Qu.:40017   3rd Qu.:2010              3rd Qu.:  744.0  
-##  Max.   :56025   Max.   :2012              Max.   :20153.0  
-##                                                             
-##   missing.rpt        drop          missing.race        adult.pop      
-##  Min.   :    0.0   Mode:logical   Min.   :    0.00   Min.   :   4581  
-##  1st Qu.:    0.0   NA's:5814      1st Qu.:    4.00   1st Qu.:  67544  
-##  Median :    7.0                  Median :   17.00   Median : 123064  
-##  Mean   :  267.2                  Mean   :  117.84   Mean   : 271307  
-##  3rd Qu.:   70.0                  3rd Qu.:   68.75   3rd Qu.: 278300  
-##  Max.   :15771.0                  Max.   :12467.00   Max.   :7626796  
-##  NA's   :55                                                           
-##    child.pop          gender      pop.density        pct.race.pop 
-##  Min.   :   1247   all   :5814   Min.   :    0.44   Min.   : NA   
-##  1st Qu.:  20524   female:   0   1st Qu.:  111.94   1st Qu.: NA   
-##  Median :  39632   male  :   0   Median :  248.72   Median : NA   
-##  Mean   :  87668                 Mean   :  903.03   Mean   :NaN   
-##  3rd Qu.:  93677                 3rd Qu.:  605.04   3rd Qu.: NA   
-##  Max.   :2631410                 Max.   :71173.24   Max.   : NA   
-##                                                     NA's   :5814  
-##   offense         arrest          officers         MURDER_mav    
-##  all  :5814   Min.   :     0   Min.   :    0.0   Min.   :   0.0  
-##  drug :   0   1st Qu.:  2494   1st Qu.:  150.0   1st Qu.:   2.2  
-##  other:   0   Median :  5706   Median :  307.0   Median :   5.2  
-##  prop :   0   Mean   : 12142   Mean   :  902.7   Mean   :  21.7  
-##  qol  :   0   3rd Qu.: 12650   3rd Qu.:  812.2   3rd Qu.:  16.0  
-##  viol :   0   Max.   :342658   Max.   :37242.0   Max.   :1079.4  
-##               NA's   :18       NA's   :18        NA's   :18      
-##   officers.pc         murder.pc          child.pov       child.pov.se     
-##  Min.   :0.000000   Min.   :0.000000   Min.   :   205   Min.   :   27.36  
-##  1st Qu.:0.002067   1st Qu.:0.000025   1st Qu.:  3949   1st Qu.:  477.81  
-##  Median :0.002519   Median :0.000044   Median :  6900   Median :  775.38  
-##  Mean   :0.003019   Mean   :0.000062   Mean   : 17384   Mean   : 1325.65  
-##  3rd Qu.:0.003147   3rd Qu.:0.000076   3rd Qu.: 15597   3rd Qu.: 1494.22  
-##  Max.   :0.046983   Max.   :0.001339   Max.   :652752   Max.   :85104.56  
-##  NA's   :18         NA's   :18                                            
-##  median.hh.income     state              county        infmort      
-##  Min.   : 18488   Min.   : 1.00   Jefferson :  84   Min.   : 4.300  
-##  1st Qu.: 39799   1st Qu.:16.00   Washington:  54   1st Qu.: 6.000  
-##  Median : 45212   Median :29.00   Jackson   :  52   Median : 7.100  
-##  Mean   : 47769   Mean   :28.73   Franklin  :  50   Mean   : 6.948  
-##  3rd Qu.: 52887   3rd Qu.:40.00   Wayne     :  46   3rd Qu.: 7.800  
-##  Max.   :119525   Max.   :56.00   Orange    :  43   Max.   :12.200  
-##                                   (Other)   :5485                   
-##   wht.infmort    nonwht.infmort      stname      pol.infl.pc    
-##  Min.   :3.700   Min.   : 5.40   NY     : 464   Min.   : 143.1  
-##  1st Qu.:5.200   1st Qu.: 8.60   FL     : 441   1st Qu.: 232.7  
-##  Median :5.700   Median :11.30   TX     : 425   Median : 267.1  
-##  Mean   :5.708   Mean   :11.02   CA     : 339   Mean   : 293.8  
-##  3rd Qu.:6.200   3rd Qu.:13.20   NC     : 330   3rd Qu.: 366.1  
-##  Max.   :7.600   Max.   :17.20   MI     : 303   Max.   :1088.3  
-##                  NA's   :23      (Other):3512                   
-##    arrest.rt      
-##  Min.   :0.00000  
-##  1st Qu.:0.03335  
-##  Median :0.04783  
-##  Mean   :0.04952  
-##  3rd Qu.:0.06586  
-##  Max.   :0.23461  
-##  NA's   :18</code></pre>
 
 
 

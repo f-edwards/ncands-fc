@@ -1,5 +1,6 @@
 #load data from models
-
+rm(list=ls())
+gc()
 .libPaths( c( .libPaths(), "U:/R") )
 
 library(arm)
@@ -18,15 +19,15 @@ library(fontcm)
 font_install("fontcm")
 loadfonts()
 
-
-load("R:/Project/NCANDS/ncands-fc/models-imp.RData")
+load("R:/Project/NCANDS/ncands-fc/models-ALL.RData")
+dat.imp<-readRDS("impdata.rds")
 
 setwd("R:/Project/NCANDS/ncands-fc/tables")
 
 models<-ls()[grep("b\\.", ls())]
 
 ### for incomplete set to finish script
-models<-c("b.all.all", "b.men.all", "b.women.all", "b.all.black", "b.all.amind", "b.all.white")
+# models<-c("b.all.all", "b.men.all", "b.women.all", "b.all.black",  "b.all.white")
 
 ### make regression tables
 ### scenarios include: mean for all
@@ -48,13 +49,15 @@ make.plot.dat.arrest<-function(data, model, label, diff.var, mean.var){
   mean.index<-which(names(data)==mean.var)
   ### for RE terms, uses King County Washington 2012
   ### with first difference models, RE terms are canceled out, just sample those for consistency
-  newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), median(as.numeric(x), na.rm=TRUE), NA)))
+  newdata<-as.data.frame(lapply(data, function(x) ifelse(is.numeric(x), mean(as.numeric(x), na.rm=TRUE), NA)))
   newdata$FIPS<-"00000";newdata$year<-2012;newdata$stname<-"00";newdata$state<-"00"
   newdata[which(is.na(newdata))]<-0
   newdata$n_obs<-0
   newdata[diff.index]<-0
   newdata<-rbind(newdata, newdata)
-  newdata[2, diff.var]<-as.numeric(quantile(data[,diff.index], 0.95))
+  newdata[2, diff.var]<-as.numeric(quantile(data[,diff.index], 0.9))
+  newdata$child.pov<-median(data$child.pov/data$child)*newdata$child
+  newdata$blk.chpov_pe<-median(data$blk.chpov_pe/data$child.blk)*newdata$child.blk
   ### 90th percentile arrest increase scenario, diff from median
   #### for list imputation objects
   sim.diff<-NULL
@@ -65,7 +68,7 @@ make.plot.dat.arrest<-function(data, model, label, diff.var, mean.var){
   }
   ###90th percentile avg arrest increase, diff from median
   newdata[2, diff.index]<-0
-  newdata[2, mean.index]<-as.numeric(quantile(data[,mean.index], 0.95))
+  newdata[2, mean.index]<-as.numeric(quantile(data[,mean.index], 0.9))
   sim.mean<-NULL
   for(i in 1:m){
     sim.temp<-apply(posterior_predict(model[[i]], newdata=newdata), 1, diff)
@@ -78,10 +81,18 @@ make.plot.dat.arrest<-function(data, model, label, diff.var, mean.var){
   plot.temp$name<-as.character(plot.temp$name)
   plot.temp[2,]<-c("model"=label,"   -High mean arrest", 
     quantile(sim.mean, c(0.25, 0.5, 0.75)))
-  
-  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child[1])*100000, 
-    lower=(as.numeric(lower)/newdata$child[1])*100000, 
-    upper=(as.numeric(upper)/newdata$child[1])*100000)
+  if(label%in%c("Full pop.", "Men", "Women")){
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child[1])*1000, 
+    lower=(as.numeric(lower)/newdata$child[1])*1000, 
+    upper=(as.numeric(upper)/newdata$child[1])*1000)}
+  if(label=="African American"){
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child.blk[1])*1000, 
+    lower=(as.numeric(lower)/newdata$child.blk[1])*1000, 
+    upper=(as.numeric(upper)/newdata$child.blk[1])*1000)}
+  if(label=="White"){
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child.wht[1])*1000, 
+    lower=(as.numeric(lower)/newdata$child.wht[1])*1000, 
+    upper=(as.numeric(upper)/newdata$child.wht[1])*1000)}
   
   return(plot.temp)
 }
@@ -94,7 +105,7 @@ make.plot.dat.officer<-function(data, model, label){
   newdata$diff.officers<-0
   newdata$diff.pol.infl.pc<-0
   newdata<-rbind(newdata, newdata)
-  newdata$diff.officers[2]<-as.numeric(quantile(data$diff.officers, 0.95))
+  newdata$diff.officers[2]<-as.numeric(quantile(data$diff.officers, 0.9))
   ### 90th percentile officers and budgets increase scenario, diff from median
   m<-length(model)
   sim.diff.officers<-NULL
@@ -104,7 +115,7 @@ make.plot.dat.officer<-function(data, model, label){
   }
   
   newdata$diff.officers[2]<-0
-  newdata$diff.pol.infl.pc[2]<-as.numeric(quantile(data$diff.pol.infl.pc, 0.95))
+  newdata$diff.pol.infl.pc[2]<-as.numeric(quantile(data$diff.pol.infl.pc, 0.9))
   
   sim.diff.budget<-NULL
   for(i in 1:m){
@@ -114,7 +125,7 @@ make.plot.dat.officer<-function(data, model, label){
   
   ###90th percentile avg officer, budget increase, diff from median
   newdata$diff.officers[2]<-0; newdata$diff.pol.infl.pc<-0
-  newdata$mean.officers[2]<-as.numeric(quantile(data$mean.officers, 0.95))
+  newdata$mean.officers[2]<-as.numeric(quantile(data$mean.officers, 0.9))
   
   sim.mean.officers<-NULL
   for(i in 1:m){
@@ -123,7 +134,7 @@ make.plot.dat.officer<-function(data, model, label){
   }
   
   newdata$mean.officers[2]<-newdata$mean.officers[1]
-  newdata$mean.pol.infl.pc[2]<-as.numeric(quantile(data$mean.pol.infl.pc, 0.95))
+  newdata$mean.pol.infl.pc[2]<-as.numeric(quantile(data$mean.pol.infl.pc, 0.9))
   
   sim.mean.budgets<-NULL
   for(i in 1:m){
@@ -142,7 +153,20 @@ make.plot.dat.officer<-function(data, model, label){
     quantile(sim.mean.officers, c(0.25, 0.5, 0.75)))
   plot.temp[4,]<-c("model"=label,"   -High average budget", 
     quantile(sim.mean.budgets, c(0.25, 0.5, 0.75)))
-
+  
+  if(label%in%c("Full pop.", "Men", "Women")){
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child[1])*1000, 
+    lower=(as.numeric(lower)/newdata$child[1])*1000, 
+    upper=(as.numeric(upper)/newdata$child[1])*1000)}
+  if(label=="African American"){
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child.blk[1])*1000, 
+    lower=(as.numeric(lower)/newdata$child.blk[1])*1000, 
+    upper=(as.numeric(upper)/newdata$child.blk[1])*1000)}
+  if(label=="White"){
+  plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child.wht[1])*1000, 
+    lower=(as.numeric(lower)/newdata$child.wht[1])*1000, 
+    upper=(as.numeric(upper)/newdata$child.wht[1])*1000)}
+  
   return(plot.temp)
 }
 
@@ -198,154 +222,154 @@ plot.dat<-rbind(plot.dat[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
 plot.dat$offense<-"All"
 plot.dat$yval<-seq(1:nrow(plot.dat))
 
-# # ###############################
-# # ## Violent
-# # ###############################
-# plot.temp<-make.plot.dat.viol(data=dat.imp$imputations[[1]],
-#                     model=b.all.viol, label="Full pop.", diff.var="diff.viol.all", mean.var="mean.viol.all")
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.viol(data=dat.imp$imputations[[1]],
-#                     model=b.men.viol, label="Men", diff.var="diff.viol.male", mean.var="mean.viol.male"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.viol(data=dat.imp$imputations[[1]],
-#                     model=b.women.viol, label="Women", diff.var="diff.viol.female", mean.var="mean.viol.female"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.viol(data=dat.imp$imputations[[1]],
-#                     model=b.blk.viol, label="African American", diff.var="diff.viol.blk", mean.var="mean.viol.blk"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.viol(data=dat.imp$imputations[[1]],
-#                     model=b.wht.viol, label="White", diff.var="diff.viol.wht", mean.var="mean.viol.wht"))
-# 
-# 
-# plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
-#                                       #ifelse(plot.temp$model=="Native American", 3,
-#                                       ifelse(plot.temp$model=="White", 4,
-#                                         ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
-# 
-# plot.temp<-plot.temp%>%arrange((order))
-# plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),
-#                                                  plot.temp[index[2]:nrow(plot.temp),]))
-# 
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),
-#                                                  plot.temp[index[3]:nrow(plot.temp),]))
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
-#                                                  plot.temp[index[4]:nrow(plot.temp),]))
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
-#                                                  plot.temp[index[5]:nrow(plot.temp),]))
-# plot.temp$offense<-"Viol"
-# 
-# plot.temp$yval<-seq(1:nrow(plot.temp))
-# 
-# plot.dat<-rbind(plot.dat, plot.temp)
-# # 
-# # 
-# # #############################
-# # ## Drug
-# # #############################
-# plot.temp<-make.plot.dat.drug(data=dat.imp$imputations[[1]],
-#                     model=b.all.drug, label="Full pop.", diff.var="diff.drug.all", mean.var="mean.drug.all")
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.drug(data=dat.imp$imputations[[1]],
-#                     model=b.men.drug, label="Men", diff.var="diff.drug.male", mean.var="mean.drug.male"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.drug(data=dat.imp$imputations[[1]],
-#                     model=b.women.drug, label="Women", diff.var="diff.drug.female", mean.var="mean.drug.female"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.drug(data=dat.imp$imputations[[1]],
-#                     model=b.blk.drug, label="African American", diff.var="diff.drug.blk", mean.var="mean.drug.blk"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.drug(data=dat.imp$imputations[[1]],
-#                     model=b.wht.drug, label="White", diff.var="diff.drug.wht", mean.var="mean.drug.wht"))
-# 
-# 
-# plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
-#                                       #ifelse(plot.temp$model=="Native American", 3,
-#                                       ifelse(plot.temp$model=="White", 4,
-#                                         ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
-# 
-# plot.temp<-plot.temp%>%arrange((order))
-# plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),
-#                                                  plot.temp[index[2]:nrow(plot.temp),]))
-# 
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),
-#                                                  plot.temp[index[3]:nrow(plot.temp),]))
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
-#                                                  plot.temp[index[4]:nrow(plot.temp),]))
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
-#                                                  plot.temp[index[5]:nrow(plot.temp),]))
-# plot.temp$offense<-"Drug"
-# 
-# plot.temp$yval<-seq(1:nrow(plot.temp))
-# 
-# plot.dat<-rbind(plot.dat, plot.temp)
-# # 
-# # 
-# # #############################
-# # ## QoL
-# # #############################
-# plot.temp<-make.plot.dat.qol(data=dat.imp$imputations[[1]],
-#                     model=b.all.qol, label="Full pop.", diff.var="diff.qol.all", mean.var="mean.qol.all")
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.qol(data=dat.imp$imputations[[1]],
-#                     model=b.men.qol, label="Men", diff.var="diff.qol.male", mean.var="mean.qol.male"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.qol(data=dat.imp$imputations[[1]],
-#                     model=b.women.qol, label="Women", diff.var="diff.qol.female", mean.var="mean.qol.female"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.qol(data=dat.imp$imputations[[1]],
-#                     model=b.blk.qol, label="African American", diff.var="diff.qol.blk", mean.var="mean.qol.blk"))
-# 
-# plot.temp<-bind_rows(plot.temp, 
-#   make.plot.dat.qol(data=dat.imp$imputations[[1]],
-#                     model=b.wht.qol, label="White", diff.var="diff.qol.wht", mean.var="mean.qol.wht"))
-# 
-# 
-# plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
-#                                       #ifelse(plot.temp$model=="Native American", 3,
-#                                       ifelse(plot.temp$model=="White", 4,
-#                                         ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
-# 
-# plot.temp<-plot.temp%>%arrange((order))
-# plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),
-#                                                  plot.temp[index[2]:nrow(plot.temp),]))
-# 
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),
-#                                                  plot.temp[index[3]:nrow(plot.temp),]))
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
-#                                                  plot.temp[index[4]:nrow(plot.temp),]))
-# index<-grep("High change in arrest", plot.temp$name)
-# plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
-#                                                  plot.temp[index[5]:nrow(plot.temp),]))
-# plot.temp$offense<-"Quality of Life"
-# 
-# plot.temp$yval<-seq(1:nrow(plot.temp))
-# 
-# plot.dat<-rbind(plot.dat, plot.temp)
+# ###############################
+# ## Violent
+# ###############################
+plot.temp<-make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.all.viol, label="Full pop.", diff.var="diff.viol.all", mean.var="mean.viol.all")
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.men.viol, label="Men", diff.var="diff.viol.male", mean.var="mean.viol.male"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.women.viol, label="Women", diff.var="diff.viol.female", mean.var="mean.viol.female"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.blk.viol, label="African American", diff.var="diff.viol.blk", mean.var="mean.viol.blk"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.wht.viol, label="White", diff.var="diff.viol.wht", mean.var="mean.viol.wht"))
+
+
+plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
+                                      #ifelse(plot.temp$model=="Native American", 3,
+                                      ifelse(plot.temp$model=="White", 4,
+                                        ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
+
+plot.temp<-plot.temp%>%arrange((order))
+plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),
+                                                 plot.temp[index[2]:nrow(plot.temp),]))
+
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),
+                                                 plot.temp[index[3]:nrow(plot.temp),]))
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
+                                                 plot.temp[index[4]:nrow(plot.temp),]))
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
+                                                 plot.temp[index[5]:nrow(plot.temp),]))
+plot.temp$offense<-"Viol"
+
+plot.temp$yval<-seq(1:nrow(plot.temp))
+
+plot.dat<-rbind(plot.dat, plot.temp)
+#
+#
+# #############################
+# ## Drug
+# #############################
+plot.temp<-make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.all.drug, label="Full pop.", diff.var="diff.drug.all", mean.var="mean.drug.all")
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.men.drug, label="Men", diff.var="diff.drug.male", mean.var="mean.drug.male"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.women.drug, label="Women", diff.var="diff.drug.female", mean.var="mean.drug.female"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.blk.drug, label="African American", diff.var="diff.drug.blk", mean.var="mean.drug.blk"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.wht.drug, label="White", diff.var="diff.drug.wht", mean.var="mean.drug.wht"))
+
+
+plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
+                                      #ifelse(plot.temp$model=="Native American", 3,
+                                      ifelse(plot.temp$model=="White", 4,
+                                        ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
+
+plot.temp<-plot.temp%>%arrange((order))
+plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),
+                                                 plot.temp[index[2]:nrow(plot.temp),]))
+
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),
+                                                 plot.temp[index[3]:nrow(plot.temp),]))
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
+                                                 plot.temp[index[4]:nrow(plot.temp),]))
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
+                                                 plot.temp[index[5]:nrow(plot.temp),]))
+plot.temp$offense<-"Drug"
+
+plot.temp$yval<-seq(1:nrow(plot.temp))
+
+plot.dat<-rbind(plot.dat, plot.temp)
+#
+#
+# #############################
+# ## QoL
+# #############################
+plot.temp<-make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.all.qol, label="Full pop.", diff.var="diff.qol.all", mean.var="mean.qol.all")
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.men.qol, label="Men", diff.var="diff.qol.male", mean.var="mean.qol.male"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.women.qol, label="Women", diff.var="diff.qol.female", mean.var="mean.qol.female"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.blk.qol, label="African American", diff.var="diff.qol.blk", mean.var="mean.qol.blk"))
+
+plot.temp<-bind_rows(plot.temp,
+  make.plot.dat.arrest(data=dat.imp$imputations[[1]],
+                    model=b.wht.qol, label="White", diff.var="diff.qol.wht", mean.var="mean.qol.wht"))
+
+
+plot.temp$order<-ifelse(plot.temp$model=="Full pop.", 1, ifelse(plot.temp$model=="African American", 2,
+                                      #ifelse(plot.temp$model=="Native American", 3,
+                                      ifelse(plot.temp$model=="White", 4,
+                                        ifelse(plot.temp$model=="Men", 5, ifelse(plot.temp$model=="Women", 6, NA)))))
+
+plot.temp<-plot.temp%>%arrange((order))
+plot.temp<-rbind(c(NA,"Full pop.",NA, NA, NA, NA), plot.temp)
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[2]-1),], rbind(c(NA, "African American", NA, NA, NA, NA),
+                                                 plot.temp[index[2]:nrow(plot.temp),]))
+
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[3]-1),], rbind(c(NA, "White", NA, NA, NA, NA),
+                                                 plot.temp[index[3]:nrow(plot.temp),]))
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
+                                                 plot.temp[index[4]:nrow(plot.temp),]))
+index<-grep("High change in arrest", plot.temp$name)
+plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
+                                                 plot.temp[index[5]:nrow(plot.temp),]))
+plot.temp$offense<-"Quality of Life"
+
+plot.temp$yval<-seq(1:nrow(plot.temp))
+
+plot.dat<-rbind(plot.dat, plot.temp)
 #############################
 ## Plot
 #############################
@@ -366,12 +390,12 @@ forest<-ggplot(data=plot.dat)+
     text = element_text(family="CM Roman"),
     panel.border = element_blank() 
   )+
-  xlab("Predicted reports by police per 1,000 children")+
+  xlab("Predicted change in reports by police per 1,000 children")+
   scale_y_reverse()+
   geom_vline(xintercept=0, linetype=2)+
   facet_wrap(~offense)
 
-table_plot<-ggplot(plot.dat)+
+table_plot<-ggplot(plot.dat%>%filter(offense%in%c("All", "Quality of Life")))+
   theme_bw() + 
   aes(y=yval)+
   #geom_text(aes(label=gsub("\\s2", "", model), x=0), hjust=0)+
@@ -392,12 +416,6 @@ table_plot<-ggplot(plot.dat)+
 pdf("within-predict-diff.pdf", family="CM Roman", width=7, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
-
-sink("arrest-plot-out.txt")
-plot.dat
-print(quantile(dat.imp$imputations[[1]]$diff.arrest.rt, c(0.1, 0.5 ,0.9), na.rm=TRUE))
-print(quantile(dat.imp$imputations[[1]]$mean.arrest.rt, c(0.1, 0.5 ,0.9), na.rm=TRUE))
-sink()
 
 ###########################################
 # For officers, budgets
@@ -453,7 +471,7 @@ forest<-ggplot(data=plot.dat)+
     panel.border = element_blank() ,
     text=element_text(family="CM Roman")
   )+
-  xlab("Predicted reports by police per 1,000 children")+
+  xlab("Predicted change in reports by police per 1,000 children")+
   geom_vline(xintercept=0, linetype=2)+
   scale_y_reverse()
 
@@ -476,13 +494,6 @@ pdf("within-predict-officer-diff.pdf", family="CM Roman", width=7, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
-sink("officer-plot-out.txt")
-plot.dat
-print(quantile(dat.imp$imputations[[1]]$diff.officers.pc, c(0.1, 0.5 ,0.9), na.rm=TRUE))
-print(quantile(dat.imp$imputations[[1]]$mean.officers.pc, c(0.1, 0.5 ,0.9), na.rm=TRUE))
-print(quantile(dat.imp$imputations[[1]]$diff.pol.infl.pc, c(0.1, 0.5 ,0.9), na.rm=TRUE))
-print(quantile(dat.imp$imputations[[1]]$mean.pol.infl.pc, c(0.1, 0.5 ,0.9), na.rm=TRUE))
-sink()
 
 ##### for tables
 
@@ -669,6 +680,14 @@ print(xtable(nameClean(ciList$b.ai.qol), caption = "Parameter estimates and 95 p
              police child maltreatment reports. American Indian children, American Indian quality of life arrests"),  file="b-ai-qol.tex")
 
 
+print(xtable(nameClean(ciList$b.all.white), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+             police child maltreatment reports. White children, all white arrests"),  file="b-wht-all.tex")
+print(xtable(nameClean(ciList$b.wht.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+             police child maltreatment reports. White children, white violent arrests"),  file="b-blk-viol.tex")
+print(xtable(nameClean(ciList$b.wht.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+             police child maltreatment reports. White children, white drug arrests"),  file="b-blk-drug.tex")
+print(xtable(nameClean(ciList$b.wht.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+             police child maltreatment reports. White children, white quality of life arrests"),  file="b-blk-qol.tex")
 
 ### pull top pop in sample from each census sub-region
 ### list is: Cook, IL (17031); Harris, TX (48201); Maricopa, Az(04013); King, WA (53033); Suffolk, NY (36103; 
@@ -676,12 +695,6 @@ print(xtable(nameClean(ciList$b.ai.qol), caption = "Parameter estimates and 95 p
 ### Middlesex, MA (25017); Shelby, TN (47157)
 ### However, not all counties here have x race, x gender
 ### pull top pop counties from 2012, get different states
-
-
-#################SHIT - SOME DUPLICATE COUNTIES - LA and other have >1 entry for this
-##########################################################
-#################THE LONG FORMAT REALLY ISN'T WORTH IT. COULD RESHAPE LATER. JUST GET IT DONE NOW
-#########################################################
 
 c.index<-c("17031", "48201", "4013", "53033", "36103", "12086", "27053", "25017", "47157")
 county.samp<-dat.imp$imputations[[1]]%>%filter(FIPS%in%c.index)
@@ -775,61 +788,8 @@ pdf("county-predict.pdf",family="CM Roman", width=7, height=8)
 forest
 dev.off()
 
-
-### some diagnostics
-plot(test$polrpt, fitted(b.all.all[[1]]))
-abline(0,1)
-
-plot(test$polrpt.blk, fitted(b.all.black[[1]]))
-abline(0,1)
-
-plot(test$polrpt.wht, fitted(b.all.white[[1]]))
-abline(0,1)
-
 ###descriptive tables
 
-# makeMeanDiff<-function(x, vars){
-#   for(i in 1:length(vars)){
-#     t<-which(names(x)==vars[i])
-#     tempMean<-x%>%group_by(FIPS)%>%summarise_at(t, mean)
-#     names(tempMean)[2]<-paste("mean.", vars[i], sep="")
-#     x<-left_join(x, tempMean)
-#     tempDiff<-x[,t]-x[,ncol(x)]
-#     x<-cbind(x, tempDiff)
-#     names(x)[ncol(x)]<-paste("diff.", vars[i], sep="")
-#   }
-#   return(x)
-# }
-# 
-# m<-length(desc)
-# predictors<-c("child.pov", "median.hh.income", "blk.chpov_pe", "ai.chpov_pe", "wht.chpov_pe", "infmort",
-#               "wht.infmort", "nonwht.infmort", "arrest.female", "arrest.male", "drug.female", "drug.male", "qol.female",
-#               "qol.male", "viol.female", "viol.male", "arrest.ai", "arrest.all", "arrest.blk", "arrest.wht", "drug.ai",
-#               "drug.all", "drug.blk", "drug.wht", "qol.ai", "qol.all", "qol.blk", "qol.wht", "viol.ai", "viol.all",
-#               "viol.blk", "viol.wht", "officers", "MURDER_mav", "pol.infl.pc")
-# 
-# 
-# desc<-desc%>%mutate(arrest.female=arrest.female/women, arrest.male=arrest.male/men,
-#                                                               arrest.ai=arrest.ai/adult.ai, arrest.blk=arrest.blk/adult.blk, arrest.wht=arrest.wht/adult.wht, 
-#                                                               drug.female=drug.female/women, drug.male=drug.male/men, drug.ai=drug.ai/adult.ai, drug.all=drug.all/adult,
-#                                                               drug.blk=drug.blk/adult.blk, drug.wht=drug.wht/adult.wht, qol.ai=qol.ai/adult.ai, qol.all=qol.all/adult,
-#                                                               qol.female=qol.female/women, qol.male=qol.male/men, qol.blk=qol.blk/adult.blk, qol.wht=qol.wht/adult.wht,
-#                                                               viol.ai=viol.ai/adult.ai, viol.blk=viol.blk/adult.blk, viol.wht=viol.wht/adult.wht, viol.all=viol.all/adult, 
-#                                                               viol.male=viol.male/men, viol.female=viol.female/women, officers=officers/(adult+child), MURDER_mav=MURDER_mav/adult,
-#                                                               pct.blk=(adult.blk+child.blk)/(adult+child), pct.ai=(adult.ai+child.ai)/(adult+child))
-#   
-# desc<-makeMeanDiff(desc, predictors)
-# 
-# DescStats<-list()
-# for(i in 1:ncol(desc)){
-#   if(is.numeric(desc[,i])){
-#     xbar<-mean(desc[,i], na.rm=TRUE)
-#     sig<-sd(desc[,i], na.rm=TRUE)
-#   }
-#   name<-names(desc)[i]
-#   DescStats[[i]]<-cbind(xbar, sig)
-#   names(DescStats)[[i]]<-name
-# }
 desc<-dat.in
 
 desc<-desc%>%mutate(rpt.pc=polrpt/child*1000, rpt.pc.blk=polrpt.blk/child.blk*1000,

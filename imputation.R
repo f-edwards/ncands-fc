@@ -95,13 +95,16 @@ counts<-c(which(names(dat)=="viol.ai"), which(names(dat)=="MURDER_mav"))
 sqrts<-c(sqrts, names(dat[counts[1]:counts[2]]))
 
 ### this works - can't really figure out why the viol measures are problematic though
+### overimputations are fitting really poorly - transformations aren't undone for output
+### but clear nonlinearity in observed/fit - data needs to perhaps be log transformed manually before
+### imputation - not worth it here. 
 
 dat.imp<-amelia(dat, ts="year", cs="FIPS", 
                 idvars=c("county", "state", "stname", "n_obs", "adult",
                   "qol.male","qol.female", "qol.ai", "qol.blk", "qol.wht", "qol.all"), 
 splinetime=2, 
-  priors=prior.mat, overimp = overimp,
-  sqrts = sqrts, p2s=2, m=5, empri=0.01*nrow(dat))
+  #priors=prior.mat, overimp = overimp,
+  sqrts = sqrts, p2s=2, m=4, empri=0.01*nrow(dat))
 
 #### FOR LATER - THIS IS ADEQUATE FOR MISSING DATA AND POVERTY ERROR
 #### THINK ABOUT HOW TO SET UP MEASUREMENT ERROR PROBLEM FOR MISSING RPT AND RACE
@@ -123,8 +126,8 @@ dat.temp<-amelia(dat, ts="year", cs="FIPS",
                 idvars=c("county", "state", "stname", "n_obs", "adult",
                   "viol.male","viol.female", "viol.ai", "viol.blk", "viol.wht", "viol.all"), 
 splinetime=2, 
-  priors=prior.mat, overimp = overimp,
-  sqrts = sqrts,  p2s=2, m=5, empri=0.01*nrow(dat))
+  #priors=prior.mat, overimp = overimp,
+  sqrts = sqrts,  p2s=2, m=4, empri=0.01*nrow(dat))
 
 for(i in 1:5){
   dat.imp$imputations[[i]]$qol.male<-dat.temp$imputations[[i]]$qol.male

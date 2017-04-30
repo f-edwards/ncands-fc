@@ -1,0 +1,122 @@
+               model                      name       lower       median     upper order
+1               <NA>                 Full pop.          NA           NA        NA  <NA>
+2          Full pop.    -High change in arrest -0.45459856  0.069893436 0.6872855     1
+3          Full pop.         -High mean arrest -0.04659562  0.599918660 2.3358969     1
+12              <NA>          African American          NA           NA        NA  <NA>
+4   African American    -High change in arrest -1.45122662  0.061754324 1.7599982     2
+5   African American         -High mean arrest -0.09263149  1.698243914 6.8547300     2
+13              <NA>                     White          NA           NA        NA  <NA>
+6              White    -High change in arrest -0.55441071  0.064466362 0.7735963     3
+7              White         -High mean arrest -0.85095598 -0.103146179 0.4899444     3
+14              <NA>                       Men          NA           NA        NA  <NA>
+8                Men    -High change in arrest -0.43100952  0.081542342 0.7222322     4
+9                Men         -High mean arrest -0.22132921  0.378589446 1.7822826     4
+15              <NA>                     Women          NA           NA        NA  <NA>
+10             Women    -High change in arrest -0.41353616  0.084454569 0.7397055     5
+11             Women         -High mean arrest -0.05824453  0.588269754 2.3242480     5
+16              <NA>                 Full pop.          NA           NA        NA  <NA>
+21         Full pop.    -High change in arrest -0.50090296  0.040771171 0.6232165     1
+31         Full pop.         -High mean arrest  0.01135768  0.739705533 2.9122265     1
+121             <NA>          African American          NA           NA        NA  <NA>
+41  African American    -High change in arrest -1.45122662  0.092631486 1.7599982     2
+51  African American         -High mean arrest  0.18526297  2.284909993 8.5838511     2
+131             <NA>                     White          NA           NA        NA  <NA>
+61             White    -High change in arrest -0.58019726  0.025786545 0.6833434     4
+71             White         -High mean arrest -0.73491653 -0.051573090 0.5544107     4
+141             <NA>                       Men          NA           NA        NA  <NA>
+81               Men    -High change in arrest -0.48342960  0.040771171 0.6348654     5
+91               Men         -High mean arrest  0.02329781  0.763003345 2.8367998     5
+151             <NA>                     Women          NA           NA        NA  <NA>
+101            Women    -High change in arrest -0.47760515  0.052420077 0.6639876     6
+111            Women         -High mean arrest  0.06406898  0.827072328 3.1862670     6
+17              <NA>                 Full pop.          NA           NA        NA  <NA>
+22         Full pop.    -High change in arrest -0.57079640  0.017473359 0.6232165     1
+32         Full pop.         -High mean arrest -0.72223217  0.011648906 0.7749435     1
+122             <NA>          African American          NA           NA        NA  <NA>
+42  African American    -High change in arrest -1.57473527  0.061754324 1.7291211     2
+52  African American         -High mean arrest -0.92631486  0.648420404 3.6435051     2
+132             <NA>                     White          NA           NA        NA  <NA>
+62             White    -High change in arrest -0.60598380  0.025786545 0.6833434     4
+72             White         -High mean arrest -0.82516943 -0.077359634 0.4899444     4
+142             <NA>                       Men          NA           NA        NA  <NA>
+82               Men    -High change in arrest -0.53584968  0.017473359 0.6057431     5
+92               Men         -High mean arrest -0.73388108 -0.005824453 0.7458212     5
+152             <NA>                     Women          NA           NA        NA  <NA>
+102            Women    -High change in arrest -0.51284309  0.046595624 0.6872855     6
+112            Women         -High mean arrest -0.45430734  0.151435778 1.1124705     6
+18              <NA>                 Full pop.          NA           NA        NA  <NA>
+23         Full pop.    -High change in arrest -0.38441390  0.128137966 0.8212479     1
+33         Full pop.         -High mean arrest -0.13396242  0.541674130 2.2485301     1
+123             <NA>          African American          NA           NA        NA  <NA>
+43  African American    -High change in arrest -1.42034946  0.092631486 1.7908754     2
+53  African American         -High mean arrest -0.46315743  1.080700673 4.7242058     2
+133             <NA>                     White          NA           NA        NA  <NA>
+63             White    -High change in arrest -0.52862417  0.064466362 0.7607031     4
+73             White         -High mean arrest -0.86384925 -0.103146179 0.5028376     4
+143             <NA>                       Men          NA           NA        NA  <NA>
+83               Men    -High change in arrest -0.39023835  0.110664607 0.7688278     5
+93               Men         -High mean arrest -0.18638250  0.436833976 1.9107118     5
+153             <NA>                     Women          NA           NA        NA  <NA>
+103            Women    -High change in arrest -0.42518507  0.075717889 0.7105833     6
+113            Women         -High mean arrest -0.16308468  0.425185070 1.8754739     6
+            offense yval
+1               All    1
+2               All    2
+3               All    3
+12              All    4
+4               All    5
+5               All    6
+13              All    7
+6               All    8
+7               All    9
+14              All   10
+8               All   11
+9               All   12
+15              All   13
+10              All   14
+11              All   15
+16          Violent    1
+21          Violent    2
+31          Violent    3
+121         Violent    4
+41          Violent    5
+51          Violent    6
+131         Violent    7
+61          Violent    8
+71          Violent    9
+141         Violent   10
+81          Violent   11
+91          Violent   12
+151         Violent   13
+101         Violent   14
+111         Violent   15
+17             Drug    1
+22             Drug    2
+32             Drug    3
+122            Drug    4
+42             Drug    5
+52             Drug    6
+132            Drug    7
+62             Drug    8
+72             Drug    9
+142            Drug   10
+82             Drug   11
+92             Drug   12
+152            Drug   13
+102            Drug   14
+112            Drug   15
+18  Quality of Life    1
+23  Quality of Life    2
+33  Quality of Life    3
+123 Quality of Life    4
+43  Quality of Life    5
+53  Quality of Life    6
+133 Quality of Life    7
+63  Quality of Life    8
+73  Quality of Life    9
+143 Quality of Life   10
+83  Quality of Life   11
+93  Quality of Life   12
+153 Quality of Life   13
+103 Quality of Life   14
+113 Quality of Life   15

@@ -1,0 +1,28 @@
+          County              cat     lower    median     upper
+1    Maricopa,AZ              All  3.737837  6.530459 11.365561
+2  Miami-Dade,FL              All  6.625959 11.509550 20.265938
+3        Cook,IL              All  3.292140  5.727423  9.989600
+4   Middlesex,MA              All  5.271804  9.006267 15.647369
+5    Hennepin,MN              All  4.200420  7.331502 12.816859
+6     Suffolk,NY              All  2.819403  4.846689  8.519672
+7      Shelby,TN              All  3.244107  5.745442 10.134221
+8      Harris,TX              All  2.925039  5.075432  8.908330
+9        King,WA              All  2.188711  3.824883  6.695529
+10   Maricopa,AZ African American  7.257558 13.465946 24.748963
+11 Miami-Dade,FL African American 11.254008 20.846813 38.029531
+12       Cook,IL African American  5.216014  9.606677 17.526817
+13  Middlesex,MA African American  8.658630 16.216992 29.515882
+14   Hennepin,MN African American 11.138582 20.440801 37.039760
+15    Suffolk,NY African American  6.079724 11.331672 20.439872
+16     Shelby,TN African American  3.101051  5.800479 10.785204
+17     Harris,TX African American  4.550366  8.339145 15.412781
+18       King,WA African American  4.230317  7.920094 14.406580
+19   Maricopa,AZ            White  2.601567  4.572516  8.138821
+20 Miami-Dade,FL            White  5.122645  9.138887 16.176161
+21       Cook,IL            White  2.451751  4.295001  7.669898
+22  Middlesex,MA            White  2.684081  4.715956  8.407821
+23   Hennepin,MN            White  1.405215  2.502438  4.472306
+24    Suffolk,NY            White  1.709297  3.002488  5.303308
+25     Shelby,TN            White  1.348475  2.458984  4.481696
+26     Harris,TX            White  2.266413  4.013881  7.138495
+27       King,WA            White  1.671724  2.956861  5.148909

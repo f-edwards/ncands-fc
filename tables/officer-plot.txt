@@ -1,0 +1,32 @@
+              model                        name      lower       median       upper
+1              <NA>                   Full pop.         NA           NA          NA
+2         Full pop.    -High change in officers -0.6981188 -0.009185773  0.68939227
+3         Full pop.      -High change in budget -0.7256761  0.000000000  0.74404762
+4         Full pop.      -High average officers -0.1377866  0.606261023  2.25051440
+5         Full pop.        -High average budget  0.4960317  2.379115226  8.56114051
+14             <NA>            African American         NA           NA          NA
+6  African American    -High change in officers -2.1845358  0.000000000  2.29951135
+7  African American      -High change in budget -2.1845358  0.057487784  2.35699914
+8  African American      -High average officers -0.8048290  1.149755677  5.34636390
+9  African American        -High average budget -0.3449267  2.644438057 12.30238574
+15             <NA>                       White         NA           NA          NA
+10            White    -High change in officers -0.8090751  0.016855732  0.84278659
+11            White      -High change in budget -0.8596423 -0.016855732  0.79221939
+12            White      -High average officers -0.5393834  0.202268781  1.43273720
+13            White        -High average budget -5.0904310 -1.163045494 -0.06742293
+   order yval
+1   <NA>    1
+2      1    2
+3      1    3
+4      1    4
+5      1    5
+14  <NA>    6
+6      2    7
+7      2    8
+8      2    9
+9      2   10
+15  <NA>   11
+10     3   12
+11     3   13
+12     3   14
+13     3   15

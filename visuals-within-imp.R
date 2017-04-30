@@ -417,6 +417,10 @@ pdf("within-predict-diff.pdf", family="CM Roman", width=7, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
+sink("plot-dat.txt")
+plot.dat
+sink()
+
 ###########################################
 # For officers, budgets
 ########################################3
@@ -494,7 +498,9 @@ pdf("within-predict-officer-diff.pdf", family="CM Roman", width=8, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
-
+sink("officer-plot.txt")
+plot.dat
+sink()
 ##### for tables
 
 ### make regression tables - use ciList and models[] as index
@@ -787,6 +793,10 @@ forest<-ggplot(data=all.ci)+
 pdf("county-predict.pdf",family="CM Roman", width=7, height=8)
 forest
 dev.off()
+
+sink("county-plot.txt")
+all.ci
+sink()
 
 ###descriptive tables
 

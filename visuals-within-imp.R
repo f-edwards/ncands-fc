@@ -265,7 +265,7 @@ plot.temp<-rbind(plot.temp[1:(index[4]-1),], rbind(c(NA, "Men", NA, NA, NA, NA),
 index<-grep("High change in arrest", plot.temp$name)
 plot.temp<-rbind(plot.temp[1:(index[5]-1),], rbind(c(NA, "Women", NA, NA, NA, NA),
                                                  plot.temp[index[5]:nrow(plot.temp),]))
-plot.temp$offense<-"Viol"
+plot.temp$offense<-"Violent"
 
 plot.temp$yval<-seq(1:nrow(plot.temp))
 

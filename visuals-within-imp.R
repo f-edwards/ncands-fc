@@ -20,7 +20,7 @@ font_install("fontcm")
 loadfonts()
 
 load("R:/Project/NCANDS/ncands-fc/models-ALL.RData")
-dat.imp<-readRDS("impdata.rds")
+dat.imp<-readRDS("R:/Project/NCANDS/ncands-fc/impdata.rds")
 
 setwd("R:/Project/NCANDS/ncands-fc/tables")
 
@@ -76,11 +76,11 @@ make.plot.dat.arrest<-function(data, model, label, diff.var, mean.var){
   }
 
   plot.temp<-data.frame("model"=label, "name"="   -High change in arrest", 
-    "lower"=quantile(sim.diff, 0.25), "median"=quantile(sim.diff, 0.5), 
-    "upper"=quantile(sim.diff, 0.75))
+    "lower"=quantile(sim.diff, 0.05), "median"=quantile(sim.diff, 0.5), 
+    "upper"=quantile(sim.diff, 0.95))
   plot.temp$name<-as.character(plot.temp$name)
   plot.temp[2,]<-c("model"=label,"   -High mean arrest", 
-    quantile(sim.mean, c(0.25, 0.5, 0.75)))
+    quantile(sim.mean, c(0.05, 0.5, 0.95)))
   if(label%in%c("Full pop.", "Men", "Women")){
   plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child[1])*1000, 
     lower=(as.numeric(lower)/newdata$child[1])*1000, 
@@ -143,16 +143,16 @@ make.plot.dat.officer<-function(data, model, label){
   }
   
   plot.temp<-data.frame("model"=label, "name"="   -High change in officers", 
-    "lower"=quantile(sim.diff.officers, 0.25), 
+    "lower"=quantile(sim.diff.officers, 0.05), 
     "median"=quantile(sim.diff.officers, 0.5), 
-    "upper"=quantile(sim.diff.officers, 0.75))
+    "upper"=quantile(sim.diff.officers, 0.95))
   plot.temp$name<-as.character(plot.temp$name)
   plot.temp[2,]<-c("model"=label,"   -High change in budget", 
-    quantile(sim.diff.budget, c(0.25, 0.5, 0.75)))
+    quantile(sim.diff.budget, c(0.05, 0.5, 0.95)))
   plot.temp[3,]<-c("model"=label,"   -High average officers", 
-    quantile(sim.mean.officers, c(0.25, 0.5, 0.75)))
+    quantile(sim.mean.officers, c(0.05, 0.5, 0.95)))
   plot.temp[4,]<-c("model"=label,"   -High average budget", 
-    quantile(sim.mean.budgets, c(0.25, 0.5, 0.75)))
+    quantile(sim.mean.budgets, c(0.05, 0.5, 0.95)))
   
   if(label%in%c("Full pop.", "Men", "Women")){
   plot.temp<-plot.temp%>%mutate(median=(as.numeric(median)/newdata$child[1])*1000, 
@@ -490,7 +490,7 @@ table_plot<-ggplot(plot.dat)+
     strip.text.x = element_blank()
   )+xlim(0,6)+
   scale_y_reverse()
-pdf("within-predict-officer-diff.pdf", family="CM Roman", width=7, height=8)
+pdf("within-predict-officer-diff.pdf", family="CM Roman", width=8, height=8)
 grid.draw(gridExtra::cbind.gtable(ggplotGrob(table_plot), ggplotGrob(forest),size="last"))
 dev.off()
 
@@ -734,9 +734,9 @@ makeCRow<-function(x, cat){
                   "lower"=rep(NA, ncol(x)), "median"=rep(NA, ncol(x)), "upper"=rep(NA, ncol(x)))
   for(i in 1:ncol(x)){
     out$County[i]<-names(x)[i]
-    out$lower[i]<-quantile(x[,i], 0.25)
+    out$lower[i]<-quantile(x[,i], 0.05)
     out$median[i]<-median(x[,i])
-    out$upper[i]<-quantile(x[,i], 0.75)
+    out$upper[i]<-quantile(x[,i], 0.95)
   }
   return(out)
 }

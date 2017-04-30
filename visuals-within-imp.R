@@ -531,13 +531,13 @@ impPars<-function(model){
   var_st<-sd(as.vector(variance[,st_error.index]))
   
   ci<-rbind(ci, 
-            c(var_obs, NA, NA))
+            c( NA, var_obs,NA))
   row.names(ci)[nrow(ci)]<-"SD:n_obs"
   ci<-rbind(ci, 
-            c(var_fips, NA, NA))
+            c( NA, var_fips,NA))
   row.names(ci)[nrow(ci)]<-"SD:FIPS"
   ci<-rbind(ci, 
-            c(var_st, NA, NA))
+            c( NA, var_st,NA))
   row.names(ci)[nrow(ci)]<-"SD:state"
   colnames(ci)<-c("Lower", "Median", "Upper")
   return(ci)
@@ -552,7 +552,7 @@ for(i in 1:length(models)){
 
 ### clean up table names
 nameClean<-function(x){
-  n<-row.names(x)
+  n<-as.character(x$var)
   for(i in 1:length(n)){
     if(n[i]%in%c("scale(diff.arrest.all)","scale(diff.arrest.blk)",
                  "scale(diff.arrest.wht)", "scale(diff.arrest.ai)",
@@ -562,17 +562,17 @@ nameClean<-function(x){
     if(n[i]%in%c("scale(diff.drug.all)","scale(diff.drug.blk)",
                  "scale(diff.drug.wht)", "scale(diff.drug.ai)",
                  "scale(diff.drug.male)", "scale(diff.drug.female)"))
-    {n[i]<-"Change in drug arrests"}
+    {n[i]<-"Change in arrests"}
     
     if(n[i]%in%c("scale(diff.viol.all)","scale(diff.viol.blk)",
                  "scale(diff.viol.wht)", "scale(diff.viol.ai)",
                  "scale(diff.viol.male)", "scale(diff.viol.female)"))
-    {n[i]<-"Change in violent arrests"}
+    {n[i]<-"Change in arrests"}
     
     if(n[i]%in%c("scale(diff.qol.all)","scale(diff.qol.blk)",
                  "scale(diff.qol.wht)", "scale(diff.qol.ai)",
                  "scale(diff.qol.male)", "scale(diff.qol.female)"))
-    {n[i]<-"Change in quality of life arrests"}
+    {n[i]<-"Change in arrests"}
     
     if(n[i]%in%c("scale(diff.officers)"))
     {n[i]<-"Change in officers"}
@@ -622,78 +622,84 @@ nameClean<-function(x){
     if(n[i]%in%c("scale(mean.drug.all)","scale(mean.drug.blk)",
                  "scale(mean.drug.wht)", "scale(mean.drug.ai)",
                  "scale(mean.drug.male)", "scale(mean.drug.female)"))
-    {n[i]<-"Mean drug arrests"}
+    {n[i]<-"Mean arrests"}
     
     if(n[i]%in%c("scale(mean.viol.all)","scale(mean.viol.blk)",
                  "scale(mean.viol.wht)", "scale(mean.viol.ai)",
                  "scale(mean.viol.male)", "scale(mean.viol.female)"))
-    {n[i]<-"Mean violent arrests"}
+    {n[i]<-"Mean arrests"}
     
     if(n[i]%in%c("scale(mean.qol.all)","scale(mean.qol.blk)",
                  "scale(mean.qol.wht)", "scale(mean.qol.ai)",
                  "scale(mean.qol.male)", "scale(mean.qol.female)"))
-    {n[i]<-"Mean quality of life arrests"}
+    {n[i]<-"Mean arrests"}
     
   }
-  row.names(x)<-n
+  x$var<-n
   return(x)
 }
 
-print(xtable(nameClean(ciList$b.all.all), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+
+### set up for table output - bracket the intervals underneath the median
+makeRegTab<-function(dum){
+  name<-row.names(dum)[2]
+  dum<-as.data.frame(dum)
+  dum$Median<-as.character(round(dum$Median, 2)); dum$Lower<-as.character(round(dum$Lower,2)); dum$Upper<-as.character(round(dum$Upper,2))
+  for(i in seq(from=1, to= 2*(nrow(dum)-3), by=2)){
+    if(i!=nrow(dum)){dum<-rbind(dum[1:i,], c(NA, paste("[", dum$Lower[i], ", ", dum$Upper[i], "]", sep="")), dum[(i+1):nrow(dum),])
+    }
+  }
+  dum<-dum%>%dplyr::select(-Lower, -Upper)
+  dum$var<-row.names(dum)
+  dum$var<-ifelse(nchar(dum$var)<3, NA, dum$var)
+  out<-data.frame("var"=dum$var, "val"=dum$Median)
+  names(out)[2]<-name
+  return(out)
+}
+
+all.tab<-cbind(nameClean(makeRegTab(ciList$b.all.all)), 
+  makeRegTab(ciList$b.all.viol)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.all.drug)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.all.qol)%>%dplyr::select(-var))
+
+blk.tab<-cbind(nameClean(makeRegTab(ciList$b.all.black)), 
+  makeRegTab(ciList$b.blk.viol)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.blk.drug)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.blk.qol)%>%dplyr::select(-var))
+
+wht.tab<-cbind(nameClean(makeRegTab(ciList$b.all.white)), 
+  makeRegTab(ciList$b.wht.viol)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.wht.drug)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.wht.qol)%>%dplyr::select(-var))
+
+men.tab<-cbind(nameClean(makeRegTab(ciList$b.men.all)), 
+  makeRegTab(ciList$b.men.viol)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.men.drug)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.men.qol)%>%dplyr::select(-var))
+
+women.tab<-cbind(nameClean(makeRegTab(ciList$b.women.all)), 
+  makeRegTab(ciList$b.women.viol)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.women.drug)%>%dplyr::select(-var),
+  makeRegTab(ciList$b.women.qol)%>%dplyr::select(-var))
+
+
+names(all.tab)<-names(blk.tab)<-names(wht.tab)<-names(men.tab)<-names(women.tab)<-c(" ", "All", "Violent", "Drug", "Qual. of Life")
+
+print(xtable(all.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
              police child maltreatment reports. All children, all arrests"),  file="b-all-all.tex",
       caption.placement = getOption("xtable.caption.placement", "top"))
-print(xtable(nameClean(ciList$b.all.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, violent arrests"),  file="b-all-viol.tex")
-print(xtable(nameClean(ciList$b.all.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, drug arrests"),  file="b-all-drug.tex")
-print(xtable(nameClean(ciList$b.all.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, quality of life arrests"),  file="b-all-qol.tex")
 
-print(xtable(nameClean(ciList$b.men.all), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+print(xtable(men.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
              police child maltreatment reports. All children, male arrests"),  file="b-men-all.tex")
-print(xtable(nameClean(ciList$b.men.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male violent arrests"),  file="b-men-viol.tex")
-print(xtable(nameClean(ciList$b.men.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male drug arrests"),  file="b-men-drug.tex")
-print(xtable(nameClean(ciList$b.men.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male quality of life arrests"),  file="b-men-qol.tex")
 
-print(xtable(nameClean(ciList$b.women.all), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+print(xtable(women.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
              police child maltreatment reports. All children, female arrests"),  file="b-women-all.tex")
-print(xtable(nameClean(ciList$b.women.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female violent arrests"),  file="b-women-viol.tex")
-print(xtable(nameClean(ciList$b.women.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female drug arrests"),  file="b-women-drug.tex")
-print(xtable(nameClean(ciList$b.women.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female quality of life arrests"),  file="b-women-qol.tex")
 
-print(xtable(nameClean(ciList$b.all.black), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+print(xtable(blk.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
              police child maltreatment reports. African American children, all African American arrests"),  file="b-blk-all.tex")
-print(xtable(nameClean(ciList$b.blk.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, African American violent arrests"),  file="b-blk-viol.tex")
-print(xtable(nameClean(ciList$b.blk.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, African American drug arrests"),  file="b-blk-drug.tex")
-print(xtable(nameClean(ciList$b.blk.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, African American quality of life arrests"),  file="b-blk-qol.tex")
 
-print(xtable(nameClean(ciList$b.all.amind), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, all American Indian arrests"),  file="b-ai-all.tex")
-print(xtable(nameClean(ciList$b.ai.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, American Indian violent arrests"),  file="b-ai-viol.tex")
-print(xtable(nameClean(ciList$b.drug.ai), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, American Indian drug arrests"),  file="b-ai-drug.tex")
-print(xtable(nameClean(ciList$b.ai.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. American Indian children, American Indian quality of life arrests"),  file="b-ai-qol.tex")
-
-
-print(xtable(nameClean(ciList$b.all.white), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
+print(xtable(wht.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
              police child maltreatment reports. White children, all white arrests"),  file="b-wht-all.tex")
-print(xtable(nameClean(ciList$b.wht.viol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. White children, white violent arrests"),  file="b-blk-viol.tex")
-print(xtable(nameClean(ciList$b.wht.drug), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. White children, white drug arrests"),  file="b-blk-drug.tex")
-print(xtable(nameClean(ciList$b.wht.qol), caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. White children, white quality of life arrests"),  file="b-blk-qol.tex")
 
 ### pull top pop in sample from each census sub-region
 ### list is: Cook, IL (17031); Harris, TX (48201); Maricopa, Az(04013); King, WA (53033); Suffolk, NY (36103; 

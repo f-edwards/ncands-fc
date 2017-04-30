@@ -652,9 +652,14 @@ makeRegTab<-function(dum){
   dum<-dum%>%dplyr::select(-Lower, -Upper)
   dum$var<-row.names(dum)
   dum$var<-ifelse(nchar(dum$var)<3, NA, dum$var)
-  out<-data.frame("var"=dum$var, "val"=dum$Median)
+  out<-data.frame("var"=dum$var, "val"=dum$Median, stringsAsFactors = FALSE)
+  for(i in 1:nrow(out)){
+    out$val[i]<-paste("$", out$val[i], "$")
+  }
   names(out)[2]<-name
+  
   return(out)
+  
 }
 
 all.tab<-cbind(nameClean(makeRegTab(ciList$b.all.all)), 
@@ -687,19 +692,23 @@ names(all.tab)<-names(blk.tab)<-names(wht.tab)<-names(men.tab)<-names(women.tab)
 
 print(xtable(all.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
              police child maltreatment reports. All children, all arrests"),  file="b-all-all.tex",
-      caption.placement = getOption("xtable.caption.placement", "top"))
+       include.rownames=FALSE)
 
 print(xtable(men.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, male arrests"),  file="b-men-all.tex")
+             police child maltreatment reports. All children, male arrests"),  file="b-men-all.tex",
+       include.rownames=FALSE)
 
 print(xtable(women.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. All children, female arrests"),  file="b-women-all.tex")
+             police child maltreatment reports. All children, female arrests"),  file="b-women-all.tex",
+       include.rownames=FALSE)
 
 print(xtable(blk.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. African American children, all African American arrests"),  file="b-blk-all.tex")
+             police child maltreatment reports. African American children, African American arrests"),  file="b-blk-all.tex",
+       include.rownames=FALSE)
 
 print(xtable(wht.tab, caption = "Parameter estimates and 95 percent posterior intervals, multilevel models of 
-             police child maltreatment reports. White children, all white arrests"),  file="b-wht-all.tex")
+             police child maltreatment reports. White children, white arrests"),  file="b-wht-all.tex",
+       include.rownames=FALSE)
 
 ### pull top pop in sample from each census sub-region
 ### list is: Cook, IL (17031); Harris, TX (48201); Maricopa, Az(04013); King, WA (53033); Suffolk, NY (36103; 

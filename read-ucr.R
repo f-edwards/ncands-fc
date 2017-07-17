@@ -42,9 +42,9 @@ for(i in 1:length(files)){
   print(i)
 }
 
-ucr.dat<-bind_rows(list(ucr[[1]], ucr[[2]], ucr[[3]], ucr[[4]], ucr[[5]], ucr[[6]],
+ucr.dat<-bind_rows(list(ucr[[1]], ucr[[2]], ucr[[3]], ucr[[4]]), ucr[[5]], ucr[[6]],
                         ucr[[7]], ucr[[8]], ucr[[9]], ucr[[10]], ucr[[11]], ucr[[12]],
-                        ucr[[13]], ucr[[14]]))
+                        ucr[[13]], ucr[[14]])
 
 rm(ucr)
 gc()

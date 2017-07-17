@@ -622,7 +622,7 @@ nameClean<-function(x){
     if(n[i]%in%c("scale(mean.arrest.all)","scale(mean.arrest.blk)",
                  "scale(mean.arrest.wht)", "scale(mean.arrest.ai)",
                  "scale(mean.arrest.male)", "scale(mean.arrest.female)"))
-    {n[i]<-"Change in arrests"}
+    {n[i]<-"Mean arrests"}
     
     if(n[i]%in%c("scale(mean.drug.all)","scale(mean.drug.blk)",
                  "scale(mean.drug.wht)", "scale(mean.drug.ai)",

@@ -51,7 +51,7 @@ seer.tot<-seer%>%group_by(year, FIPS, child)%>%summarise(pop=sum(pop))%>%mutate(
 seer.tot<-spread(seer.tot, child, pop)%>%rename(adult=`FALSE`, child=`TRUE`)%>%dplyr::select(-race, -sex)
 
 
-seer.race<-seer%>%filter(race%in%c("ai", "blk", "wht"))%>%
+seer.race<-seer%>%filter(race%in%c("ai", "blk", "wht", "aa"))%>%
   group_by(year, FIPS, child, race)%>%summarise(pop=sum(pop))
 
 seer.race.adult<-seer.race%>%filter(child==FALSE)%>%spread(race, pop, sep=".")%>%

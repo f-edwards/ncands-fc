@@ -1,6 +1,11 @@
 rm(list=ls())
 gc()
 
+<<<<<<< HEAD
+=======
+.libPaths( c( .libPaths(), "U:/R") )
+
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 library(readr)
 library(dplyr)
 library(tidyr)
@@ -12,6 +17,7 @@ library(ggplot2)
 library(foreign)
 library(haven)
 
+<<<<<<< HEAD
 setwd("C:/Users/fre9/Box Sync/ncands-csv/")
 #setwd("D:/Sync/ucr/")
 
@@ -23,6 +29,16 @@ setwd("C:/Users/fre9/Box Sync/ncands-csv/")
 
 dir<-"C:/Users/fre9/Box Sync/ncands-csv/ucr/"
 files<-c("ICPSR_03997/ICPSR_03997/DS0001/03997-0001-Data.dta",
+=======
+setwd("R:/Project/NCANDS/ncands-csv/")
+#setwd("D:/Sync/ucr/")
+
+###UCR READ
+### load 2012 UCR, loads object da35018.001
+dir<-"R:/Project/NCANDS/ucr/"
+files<-c("ICPSR_03729/ICPSR_03729/DS0001/03729-0001-Data.dta",
+         "ICPSR_03997/ICPSR_03997/DS0001/03997-0001-Data.dta",
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
          "ICPSR_04068/ICPSR_04068/DS0001/04068-0001-Data.dta",
          "ICPSR_04461/ICPSR_04461/DS0001/04461-0001-Data.dta",
          "ICPSR_04716/ICPSR_04716/DS0001/04716-0001-Data.dta",
@@ -45,6 +61,7 @@ for(i in 1:length(files)){
 
 ucr.dat<-bind_rows(list(ucr[[1]], ucr[[2]], ucr[[3]], ucr[[4]]), ucr[[5]], ucr[[6]],
                    ucr[[7]], ucr[[8]], ucr[[9]], ucr[[10]], ucr[[11]], ucr[[12]],
+<<<<<<< HEAD
                    ucr[[13]], ucr[[14]])
 
 ucr.dat<-ucr.dat%>%
@@ -94,6 +111,14 @@ names(ucr.dat)[which(names(ucr.dat)=="ORI")]<-"ORI7"
 ### Crosswalk onto FIPS
 ##################################################
 
+=======
+                   ucr[[13]], ucr[[14]], ucr[[15]])
+
+rm(ucr)
+gc()
+names(ucr.dat)[which(names(ucr.dat)=="ORI")]<-"ORI7"
+
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 ### load UCR crosswalk to convert into FIPS, ORI in UCR, ORI7 in crosswalk should match
 crosswalk<-read.delim("35158-0001-Data.tsv", sep="\t", colClasses=c(rep(NA, 3), rep("character", 3), rep(NA, 40)),
                       stringsAsFactors = FALSE)
@@ -135,7 +160,11 @@ ucr.fips$total.age<-apply(ucr.fips[,age.index[1]:age.index[2]], 1, sum)
 
 ####FOR LATER - COULD MAKE AGENCY COUNTS FOR DATA IN BOTH UCR AND CROSSWALK TO CHECK FOR COMPLETENESS
 
+<<<<<<< HEAD
 viol.codes<-c("011", "012", "020", "030", "040", "080")
+=======
+viol.codes<-c("011", "012", "020", "030", "040")
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 prop.codes<-c("050", "060", "070", "100", "110", "120", "130")
 drug.codes<-c("18")
 qol.codes<-c("140","190", "220", "230", "240", "250", "270", "280")
@@ -172,11 +201,29 @@ ucr.ori.offense<-ucr.fips%>%group_by(FIPS, YEAR)%>%
             viol.aa=sum(aa)))%>%
   full_join(
     ucr.fips%>%group_by(FIPS, YEAR)%>%
+<<<<<<< HEAD
   summarise(arrest.all=sum(total.age),
             arrest.wht=sum(wht),
             arrest.blk=sum(blk),
             arrest.ai=sum(ai),
             arrest.aa=sum(aa)))
+=======
+      filter(offense=="prop")%>%
+  summarise(prop.all=sum(total.age),
+            prop.wht=sum(wht),
+            prop.blk=sum(blk),
+            prop.ai=sum(ai),
+            prop.aa=sum(aa)))%>%
+  full_join(
+    ucr.fips%>%group_by(FIPS, YEAR)%>%
+      filter(offense=="qol")%>%
+  summarise(qol.all=sum(total.age),
+            qol.wht=sum(wht),
+            qol.blk=sum(blk),
+            qol.ai=sum(ai),
+            qol.aa=sum(aa)))
+
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 
 #write.csv(ucr.ori.out, "ucr-fips-race-ts.csv")
 
@@ -203,7 +250,11 @@ ucr.ori.offense<-ucr.fips%>%group_by(FIPS, YEAR)%>%
 # [10] "30765-0001-Data.dta" "33525-0001-Data.dta" "34584-0001-Data.dta"
 # [13] "35020-0001-Data.dta" "36119-0001-Data.dta" "36395-0001-Data.dta"
 
+<<<<<<< HEAD
 setwd("C:/Users/fre9/Box Sync/ncands-csv/leoka/")
+=======
+setwd("R:/Project/NCANDS/ncands-csv/leoka/")
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 
 ### read leoka data
 files<-list.files()
@@ -225,7 +276,11 @@ leoka.dat<-left_join(leoka.dat, crosswalk)%>%
 leoka.county<-leoka.dat%>%group_by(FIPS, YEAR)%>%summarise(officers=sum(officers))
 
 ############# COUNTY FILES - NO AGENCY / RACE / GENDER BREAKOUT - USE FOR TOTAL ARRESTS
+<<<<<<< HEAD
 setwd("C:/Users/fre9/Box Sync/ncands-csv/ucr-county")
+=======
+setwd("R:/Project/NCANDS/ncands-csv/ucr-county")
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 files<-list.files()
 county.dat<-list()
 for(i in 1:length(files)){
@@ -317,7 +372,11 @@ c.ucr[which((c.ucr$FIPS=="36061")&(c.ucr$YEAR<2003)), 3:7]<-NA
 # [10] "30763-0004-Data.txt" "33523-0004-Data.txt" "34582-0004-Data.txt"
 # [13] "35019-0004-Data.txt" "36117-0004-Data.txt"
 
+<<<<<<< HEAD
 setwd("C:/Users/fre9/Box Sync/ncands-csv/ucr-county-offenses/data")
+=======
+setwd("R:/Project/NCANDS/ncands-csv/ucr-county-offenses/data")
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 files<-list.files()
 ### structure changes after 2008 - 27644, index 9
 ### caution on 2009 - 2014, INDEX and MODINDX are 
@@ -370,11 +429,16 @@ c.offense.ucr$FIPS<-paste(c.offense.ucr$FIPS_ST, c.offense.ucr$FIPS_CTY, sep="")
 
 c.offense.ucr<-c.offense.ucr%>%
   mutate(VIOLENT.OFFENSE=MURDER+RAPE+ROBBERY+AGASSLT)%>%
+<<<<<<< HEAD
   dplyr::select(FIPS, YEAR, MURDER, VIOLENT)
+=======
+  dplyr::select(FIPS, YEAR, MURDER, VIOLENT.OFFENSE)
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 
 ####################################################
 #### MERGE leoka.county, c.offense.ucr, ucr.agenycfile
 
+<<<<<<< HEAD
 ucr.out<-full_join(ucr.ori.offense, leoka.county)
 ucr.out<-full_join(ucr.out, c.offense.ucr)
 ucr.out<-full_join(ucr.out, c.ucr)%>%
@@ -382,6 +446,66 @@ ucr.out<-full_join(ucr.out, c.ucr)%>%
   filter(!(is.na(YEAR)))
 
 write.csv(ucr.out, "C:/Users/fre9/Box Sync/ncands-csv/ucr-county-arrest-offense.csv", row.names=FALSE)
+=======
+### to mark as missing data for the agency file - 18015 2013; 21073 2005; 22071 all years; 42063 all years; 
+### 42101 all years (philly and indiana county look switched in the data); 
+### NYC COUNTIES: 36005 047 059 061 081 085 #### CHECK ALL THESE going to NA all of them, maybe manually check later
+### NA the county file for 13, 14
+error<-which(ucr.ori.offense$FIPS%in%(c("36005", "36047", "36059", "36061", "36081", "36085", "22071", "42063",
+  "42101")))
+error<-c(error, which((ucr.ori.offense$FIPS=="18015")&(ucr.ori.offense$YEAR==2013)))
+error<-c(error, which((ucr.ori.offense$FIPS=="21073")&(ucr.ori.offense$YEAR==2005)))
+
+ucr.ori.offense[error,3:ncol(ucr.ori.offense)]<-NA
+
+### NYC county data is off for county file for 13, 14
+error<-which((c.ucr$FIPS%in%(c("36005", "36047", "36059", "36061", "36081", "36085"))&
+    c.ucr$YEAR>2012))
+c.ucr[error, 3:7]<-NA
+
+#### use new york crime data for county file
+### data accessed at https://data.ny.gov/Public-Safety/Adult-Arrests-by-County-Beginning-1970/rikd-mt35
+ny<-fread("R:/Project/NCANDS/ncands-csv/Adult_Arrests_by_County___Beginning_1970.csv")
+nyfips<-fread("R:/Project/NCANDS/ncands-csv/nyfips.csv", colClasses = "character")
+nycw<-cbind(unique(ny$County), paste("36", nyfips$V1, sep=""))
+nycw<-as.data.frame(nycw); names(nycw)<-c("County", "FIPS")
+ny<-left_join(ny, nycw)
+### to match with c.ucr
+ny<-ny%>%
+  mutate(viol=`Violent Felony`,
+    all=Total,
+    drug=`Drug Felony`+`Drug Misd`)%>%
+  rename(YEAR=Year)%>%
+  dplyr::select(FIPS, YEAR, viol, drug, all)%>%
+  filter(YEAR>1999)%>%
+  filter(!(FIPS=="36NA"))
+ny$FIPS<-as.character(ny$FIPS)
+
+c.ucr<-full_join(c.ucr%>%
+  filter(substr(FIPS, 1, 2)!="36"),
+  ny)
+
+ucr.out<-full_join(ucr.ori.offense, leoka.county)
+ucr.out<-full_join(ucr.out, c.offense.ucr)
+ucr.out<-full_join(ucr.out, c.ucr)%>%
+  filter(!(is.na(YEAR)))
+
+# #quality check on agency-level data
+# z<-which(abs(ucr.out$drug - ucr.out$drug.all)>5000)
+# table(ucr.out[z, "FIPS"])
+# View(ucr.out[z,])
+# ### to mark as missing data for the agency file - 18015 2013; 21073 2005; 22071 all years; 42063 all years; 
+# ### 42101 all years (philly and indiana county look switched in the data); 
+# ### NYC COUNTIES: 36005 047 059 061 081 085 #### CHECK ALL THESE going to NA all of them, maybe manually check later
+# ### NA the county file for 13, 14
+
+#check
+hist(ucr.out$drug-ucr.out$drug.all)
+
+#### DO CLOSE COMPARISON OF COUNTS - CHECK ON NAs
+
+write.csv(ucr.out, "R:/Project/NCANDS/ncands-csv/ucr-county-arrest-offense.csv", row.names=FALSE)
+>>>>>>> 5387fa18b59700e4a2c0402004b61b4f27f86e07
 
 
   
